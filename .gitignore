@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # DocuScan — root repository
-# Applies to both document-extraction-api/ and project/.
+# Applies to both document-extraction-api/ and document-extraction-front-end/.
 # ---------------------------------------------------------------------------
 
 # Dependencies and build output

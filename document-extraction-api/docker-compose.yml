@@ -105,7 +105,7 @@
 
   frontend:
     build:
-      context: ${FRONTEND_CONTEXT:-../project}
+      context: ${FRONTEND_CONTEXT:-../document-extraction-front-end}
       args:
         VITE_API_URL: /api/v1
     container_name: document-extraction-web

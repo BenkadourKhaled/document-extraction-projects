@@ -2,7 +2,7 @@
 
 This guide covers the supplied single-host Docker Compose deployment. The API and
 frontend are two folders of the same repository; this Compose file lives in
-`document-extraction-api/` and builds the sibling `project/` frontend folder.
+`document-extraction-api/` and builds the sibling `document-extraction-front-end/` frontend folder.
 
 ## 1. Prerequisites
 
@@ -19,7 +19,7 @@ Expected layout:
 ```text
 /opt/document-extraction/
   document-extraction-api/
-  project/                     # frontend repository
+  document-extraction-front-end/     # frontend repository
 ```
 
 ## 2. Prepare configuration
@@ -51,7 +51,7 @@ Set at least:
 | `API_PORT` | host port for the API; keep it private behind the proxy |
 | `FRONTEND_PORT` | host port for the frontend nginx container |
 | `RETENTION_DAYS` | organization policy; `0` disables automatic purge |
-| `FRONTEND_CONTEXT` | path to the frontend checkout, default `../project` |
+| `FRONTEND_CONTEXT` | path to the frontend checkout, default `../document-extraction-front-end` |
 
 The API refuses to start with the development `JWT_SECRET`, the default bootstrap
 password, or the MinIO default secret when the active profile is `postgres` or

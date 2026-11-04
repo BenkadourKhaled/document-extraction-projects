@@ -106,7 +106,7 @@ flowchart LR
 ```
 
 Le front et l'API sont **deux applications distinctes réunies dans ce dépôt**
-(`project/` et `document-extraction-api/`). Le front peut être servi par nginx et
+(`document-extraction-front-end/` et `document-extraction-api/`). Le front peut être servi par nginx et
 proxyfier `/api/v1/` vers cette API.
 
 ### Stack technique
@@ -183,7 +183,7 @@ Le Compose démarre une stack complète :
 Le profil Spring `postgres` est activé automatiquement. Les fichiers sont stockés
 dans MinIO, les métadonnées et résultats dans PostgreSQL.
 
-Le frontend est construit depuis le dossier voisin `../project` par défaut
+Le frontend est construit depuis le dossier voisin `../document-extraction-front-end` par défaut
 (`FRONTEND_CONTEXT`). En production, pinnez
 `MINIO_IMAGE` par digest : les images MinIO officielles ne sont plus publiées et
 le miroir `elestio/minio` par défaut doit être vérifié par votre organisation.
@@ -334,7 +334,7 @@ complet est fourni dans `.env.example`.
 | `TESSDATA_PREFIX` | chemin système | Données Tesseract |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Origine front autorisée ; Compose utilise `8081` |
 | `API_PORT` / `FRONTEND_PORT` | `8080` / `8081` | Ports hôte Compose |
-| `FRONTEND_CONTEXT` | `../project` | Dépôt frontend pour le build Compose |
+| `FRONTEND_CONTEXT` | `../document-extraction-front-end` | Dépôt frontend pour le build Compose |
 | `MINIO_IMAGE` | `elestio/minio:latest` | Miroir MinIO ; pin par digest en production |
 
 ### Rétention et audit
@@ -526,7 +526,7 @@ flowchart LR
 ```
 
 The frontend and API are **two distinct applications combined in this repository**
-(`project/` and `document-extraction-api/`). The frontend can be served by nginx
+(`document-extraction-front-end/` and `document-extraction-api/`). The frontend can be served by nginx
 and proxy `/api/v1/` to this API.
 
 ### Quick start — local without Docker
@@ -581,7 +581,7 @@ console `http://localhost:9001`), a bucket initializer, the API on
 `http://localhost:${FRONTEND_PORT:-8081}`. The `postgres` Spring profile is
 enabled automatically.
 
-The frontend is built from the sibling folder `../project` by default
+The frontend is built from the sibling folder `../document-extraction-front-end` by default
 (`FRONTEND_CONTEXT`). For production, pin
 `MINIO_IMAGE` by digest: official MinIO images are no longer published, and the
 default `elestio/minio` mirror must be reviewed by your organization. See
@@ -678,7 +678,7 @@ All values can be overridden by environment variables; see `.env.example`.
 | `TESSDATA_PREFIX` | system path | Tesseract data |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Allowed frontend origin; Compose uses `8081` |
 | `API_PORT` / `FRONTEND_PORT` | `8080` / `8081` | Compose host ports |
-| `FRONTEND_CONTEXT` | `../project` | Frontend checkout used by the Compose build |
+| `FRONTEND_CONTEXT` | `../document-extraction-front-end` | Frontend checkout used by the Compose build |
 | `MINIO_IMAGE` | `elestio/minio:latest` | MinIO mirror; pin by digest in production |
 
 ### Retention and audit

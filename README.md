@@ -30,7 +30,7 @@
 des PDF (natifs ou scannés) et des images en texte exploitable. Elle réunit dans
 un même dépôt :
 
-- **`project/`** — une interface React 18/TypeScript permettant de se connecter,
+- **`document-extraction-front-end/`** — une interface React 18/TypeScript permettant de se connecter,
   déposer des fichiers, suivre le traitement, comparer l'aperçu et le texte,
   rechercher, éditer, copier et télécharger les résultats ;
 - **`document-extraction-api/`** — une API Spring Boot 3.3 qui gère
@@ -112,7 +112,7 @@ Flux d'un document :
 │   ├── Dockerfile
 │   ├── DEPLOYMENT.md
 │   └── SECURITY.md
-├── project/                          # Frontend React/Vite
+├── document-extraction-front-end/    # Frontend React/Vite
 │   ├── src/
 │   │   ├── api/                      # client Axios, auth, types, erreurs
 │   │   ├── components/ui/            # shadcn/ui
@@ -187,7 +187,7 @@ Points utiles :
 - **Santé de l'API** : `http://localhost:18080/actuator/health`.
 - **Proxy front** : nginx sert le SPA et proxifie `/api/v1/` vers
   `http://backend:8080/api/v1/`.
-- **`FRONTEND_CONTEXT`** : vaut `../project` par défaut ; lancez Compose depuis
+- **`FRONTEND_CONTEXT`** : vaut `../document-extraction-front-end` par défaut ; lancez Compose depuis
   `document-extraction-api/` pour que le chemin reste correct.
 
 #### Premier administrateur
@@ -341,7 +341,7 @@ curl -X POST http://localhost:18080/api/v1/extractions \
 ### Configuration
 
 Le détail complet se trouve dans `document-extraction-api/.env.example` et
-`project/.env.example`. Variables principales :
+`document-extraction-front-end/.env.example`. Variables principales :
 
 | Variable | Défaut | Description |
 | --- | --- | --- |
@@ -360,7 +360,7 @@ Le détail complet se trouve dans `document-extraction-api/.env.example` et
 | `OCR_DEFAULT_LANGUAGES` | `fra+eng` | Langues par défaut |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Origine front autorisée |
 | `API_PORT` / `FRONTEND_PORT` | `8080` / `8081` | Ports hôte Compose |
-| `FRONTEND_CONTEXT` | `../project` | Dossier frontend pour le build Compose |
+| `FRONTEND_CONTEXT` | `../document-extraction-front-end` | Dossier frontend pour le build Compose |
 | `VITE_API_URL` | `/api/v1` | URL de base de l'API côté front |
 | `VITE_DEV_API_PROXY` | `http://localhost:18080` | Cible du proxy Vite en développement |
 
@@ -458,7 +458,7 @@ Ils lisent `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` depuis
 | [`document-extraction-api/DEPLOYMENT.md`](document-extraction-api/DEPLOYMENT.md) | Docker, TLS, Prometheus, sauvegarde, restauration |
 | [`document-extraction-api/SECURITY.md`](document-extraction-api/SECURITY.md) | Contrôles et checklist de sécurité |
 | [`document-extraction-api/benchmark/README.md`](document-extraction-api/benchmark/README.md) | Benchmark OCR synthétique |
-| [`project/README.md`](project/README.md) | Référence complète du frontend |
+| [`document-extraction-front-end/README.md`](document-extraction-front-end/README.md) | Référence complète du frontend |
 
 ### Licence
 
@@ -479,7 +479,7 @@ Pour toute demande d'autorisation, contactez le titulaire via son compte GitHub.
 (native or scanned) and images into usable text. It combines two applications in
 one repository:
 
-- **`project/`** — a React 18/TypeScript interface to sign in, upload files,
+- **`document-extraction-front-end/`** — a React 18/TypeScript interface to sign in, upload files,
   follow processing, compare the preview with the extracted text, search, edit,
   copy and download results;
 - **`document-extraction-api/`** — a Spring Boot 3.3 API that handles JWT
@@ -560,7 +560,7 @@ Document flow:
 │   ├── Dockerfile
 │   ├── DEPLOYMENT.md
 │   └── SECURITY.md
-├── project/                          # React/Vite frontend
+├── document-extraction-front-end/    # React/Vite frontend
 │   ├── src/
 │   │   ├── api/                      # Axios client, auth, types, errors
 │   │   ├── components/ui/            # shadcn/ui
@@ -634,7 +634,7 @@ Useful endpoints:
 - **API health**: `http://localhost:18080/actuator/health`.
 - **Frontend proxy**: nginx serves the SPA and proxies `/api/v1/` to
   `http://backend:8080/api/v1/`.
-- **`FRONTEND_CONTEXT`**: defaults to `../project`; run Compose from
+- **`FRONTEND_CONTEXT`**: defaults to `../document-extraction-front-end`; run Compose from
   `document-extraction-api/` so the path stays correct.
 
 #### First administrator
@@ -785,7 +785,7 @@ curl -X POST http://localhost:18080/api/v1/extractions \
 ### Configuration
 
 The full list is in `document-extraction-api/.env.example` and
-`project/.env.example`. Main variables:
+`document-extraction-front-end/.env.example`. Main variables:
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -804,7 +804,7 @@ The full list is in `document-extraction-api/.env.example` and
 | `OCR_DEFAULT_LANGUAGES` | `fra+eng` | Default languages |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Allowed frontend origin |
 | `API_PORT` / `FRONTEND_PORT` | `8080` / `8081` | Compose host ports |
-| `FRONTEND_CONTEXT` | `../project` | Frontend folder for the Compose build |
+| `FRONTEND_CONTEXT` | `../document-extraction-front-end` | Frontend folder for the Compose build |
 | `VITE_API_URL` | `/api/v1` | Frontend API base URL |
 | `VITE_DEV_API_PROXY` | `http://localhost:18080` | Vite dev proxy target |
 
@@ -899,7 +899,7 @@ They read `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` from
 | [`document-extraction-api/DEPLOYMENT.md`](document-extraction-api/DEPLOYMENT.md) | Docker, TLS, Prometheus, backup, restore |
 | [`document-extraction-api/SECURITY.md`](document-extraction-api/SECURITY.md) | Security controls and checklist |
 | [`document-extraction-api/benchmark/README.md`](document-extraction-api/benchmark/README.md) | Synthetic OCR benchmark |
-| [`project/README.md`](project/README.md) | Full frontend reference |
+| [`document-extraction-front-end/README.md`](document-extraction-front-end/README.md) | Full frontend reference |
 
 ### License
 
