@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 199 89% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 94%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 199 89% 95%;
+    --accent-foreground: 199 89% 30%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 71% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 35%;
+    --warning-foreground: 0 0% 100%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 199 89% 36%;
+    --chart-1: 199 89% 36%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 84% 60%;
+    --chart-5: 280 65% 60%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 89% 55%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 199 50% 20%;
+    --accent-foreground: 199 89% 80%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 71% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 35%;
+    --warning-foreground: 0 0% 8%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 199 89% 55%;
+    --chart-1: 199 89% 55%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 72% 50%;
+    --chart-5: 280 65% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  [dir="rtl"] {
+    text-align: right;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 9999px;
+  }
+
+  mark.search-highlight {
+    background-color: hsl(38 92% 50% / 0.35);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  /* Indeterminate progress bar used while polling */
+  .progress-indeterminate {
+    position: relative;
+    overflow: hidden;
+    background-color: hsl(var(--muted));
+    border-radius: 9999px;
+  }
+
+  .progress-indeterminate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.8) 40%,
+      hsl(var(--primary)) 50%,
+      hsl(var(--primary) / 0.8) 60%,
+      transparent 100%
+    );
+    animation: indeterminate-progress 1.5s ease-in-out infinite;
+    transform-origin: left center;
+  }
+
+  @keyframes indeterminate-progress {
+    0% { transform: translateX(-100%) scaleX(0.5); }
+    50% { transform: translateX(0%) scaleX(1); }
+    100% { transform: translateX(100%) scaleX(0.5); }
+  }
+
+  /* Glass morphism card effect */
+  .glass-card {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  /* Gradient text utility */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(199 89% 70%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Hero gradient background */
+  .hero-glow {
+    background:
+      radial-gradient(ellipse 55% 42% at 10% -8%, hsl(var(--primary) / 0.14), transparent 70%),
+      radial-gradient(ellipse 38% 32% at 92% 0%, hsl(199 89% 60% / 0.09), transparent 70%),
+      hsl(var(--background));
+  }
+
+  .dark .hero-glow {
+    background:
+      radial-gradient(ellipse 55% 42% at 10% -8%, hsl(var(--primary) / 0.16), transparent 70%),
+      radial-gradient(ellipse 38% 32% at 92% 0%, hsl(199 89% 60% / 0.07), transparent 70%),
+      hsl(var(--background));
+  }
+}

@@ -1,0 +1,23 @@
+
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/document_extraction}
+    username: ${DATABASE_USERNAME:document}
+    password: ${DATABASE_PASSWORD:document}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:false}
+
+logging:
+  level:
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:INFO}
+    org.hibernate.orm.jdbc.bind: ${JDBC_BIND_LOG_LEVEL:INFO}
+    org.springframework.jdbc.core: ${JDBC_LOG_LEVEL:INFO}
+
+app:
+  storage:
+    type: ${STORAGE_TYPE:s3}

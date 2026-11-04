@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (JDK 21 + Tesseract)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Install Tesseract languages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng tesseract-ocr-ara
+
+      - name: Configure Tesseract data path
+        run: |
+          TESSDATA="$(dirname "$(dpkg -L tesseract-ocr-eng | grep '/tessdata/eng.traineddata$' | head -n1)")"
+          echo "TESSDATA_PREFIX=$TESSDATA" >> "$GITHUB_ENV"
+          echo "Using TESSDATA_PREFIX=$TESSDATA"
+
+      - name: Verify
+        run: mvn -B verify
+
+  docker:
+    name: Docker integration (PostgreSQL + MinIO + OCR)
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: |
+          cat > .env <<'DOTENV'
+          POSTGRES_DB=document_extraction
+          POSTGRES_USER=document
+          POSTGRES_PASSWORD=ci-postgres-password-2026
+          MINIO_ROOT_USER=ci-minio
+          MINIO_SECRET_KEY=ci-minio-secret-2026
+          MINIO_BUCKET=document-extraction
+          BOOTSTRAP_ENABLED=true
+          BOOTSTRAP_ORG_NAME=CI Organization
+          BOOTSTRAP_ORG_SLUG=ci
+          BOOTSTRAP_ADMIN_EMAIL=ci-admin@example.test
+          BOOTSTRAP_ADMIN_PASSWORD=CiAdminPass123!
+          BOOTSTRAP_ADMIN_NAME=CI Administrator
+          JWT_SECRET=ci-only-jwt-secret-9f4c2e7a1b8d6c3f5e0a
+          JWT_TTL_MINUTES=60
+          RETENTION_DAYS=1
+          CORS_ALLOWED_ORIGIN=http://localhost:3000
+          API_PORT=18080
+          MINIO_IMAGE=elestio/minio:latest
+          DOTENV
+
+      - name: Validate Compose configuration
+        run: docker compose config -q
+
+      - name: Build and start API stack
+        run: docker compose up -d --build postgres minio minio-init document-extraction-api
+
+      - name: Wait for API health
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://localhost:18080/actuator/health >/dev/null; then
+              echo "API healthy after ${attempt} attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy" >&2
+          docker compose ps >&2
+          docker compose logs --tail=200 document-extraction-api >&2
+          exit 1
+
+      - name: Login, upload, OCR and source-file check
+        run: |
+          set -euo pipefail
+          LOGIN="$(curl -fsS -X POST http://localhost:18080/api/v1/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"ci-admin@example.test","password":"CiAdminPass123!"}')"
+          TOKEN="$(printf '%s' "$LOGIN" | jq -r '.accessToken')"
+          test -n "$TOKEN"
+          test "$TOKEN" != "null"
+
+          UPLOAD="$(curl -fsS -X POST http://localhost:18080/api/v1/extractions \
+            -H "Authorization: Bearer $TOKEN" \
+            -F "file=@benchmark/corpus/fr-invoice.png;type=image/png" \
+            -F "languages=fra")"
+          ID="$(printf '%s' "$UPLOAD" | jq -r '.id')"
+          test -n "$ID"
+          test "$ID" != "null"
+
+          STATUS=""
+          for attempt in $(seq 1 60); do
+            RESPONSE="$(curl -fsS -H "Authorization: Bearer $TOKEN" \
+              "http://localhost:18080/api/v1/extractions/$ID")"
+            STATUS="$(printf '%s' "$RESPONSE" | jq -r '.status')"
+            echo "Extraction $ID status: $STATUS"
+            if [[ "$STATUS" == "COMPLETED" || "$STATUS" == "FAILED" || "$STATUS" == "CANCELLED" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          test "$STATUS" = "COMPLETED"
+          printf '%s' "$RESPONSE" | jq -e '.fullText | length > 0' >/dev/null
+
+          curl -fsS -H "Authorization: Bearer $TOKEN" \
+            -o /tmp/source.png \
+            "http://localhost:18080/api/v1/extractions/$ID/file"
+          test -s /tmp/source.png
+
+          curl -fsS http://localhost:18080/actuator/prometheus \
+            | grep -q 'jvm_memory_used_bytes'
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=300
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v

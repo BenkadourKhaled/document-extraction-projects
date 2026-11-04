@@ -1,0 +1,236 @@
+LICENCE PROPRIÉTAIRE — TOUS DROITS RÉSERVÉS
+PROPRIETARY LICENSE — ALL RIGHTS RESERVED
+
+Copyright (c) 2026 DocuScan. Tous droits réservés. / All rights reserved.
+
+AVIS / NOTICE
+La version française fait foi. La version anglaise est fournie à titre
+informatif. / The French version prevails. The English version is provided for
+convenience only.
+
+================================================================================
+VERSION FRANÇAISE
+================================================================================
+
+1. DÉFINITIONS
+
+« Logiciel » désigne l'ensemble du code source, du code objet, des scripts, des
+migrations, de la documentation, des fichiers de configuration, des marques, des
+logos et de tout autre élément du dépôt Document Extractor, y compris ses mises
+à jour et versions successives.
+
+« Titulaire » désigne DocuScan, titulaire des droits de propriété intellectuelle
+sur le Logiciel.
+
+« Vous » désigne toute personne physique ou morale qui accède au Logiciel ou à
+son dépôt.
+
+2. PROPRIÉTÉ INTELLECTUELLE
+
+Le Logiciel est la propriété exclusive du Titulaire et de ses concédants. Il est
+protégé par les lois relatives au droit d'auteur, aux bases de données, aux
+marques et à la concurrence déloyale, ainsi que par les traités internationaux
+applicables.
+
+Aucun droit de propriété intellectuelle n'est transféré par la présente licence.
+Tous les droits non expressément accordés sont réservés au Titulaire.
+
+3. ÉTENDUE DES DROITS
+
+Aucune licence, expresse ou implicite, n'est accordée sur le Logiciel, à
+l'exception du droit de consulter le dépôt public sur GitHub dans les limites
+strictement prévues par les conditions d'utilisation de GitHub.
+
+L'accès au dépôt, y compris la consultation, le clonage ou le téléchargement
+autorisés par GitHub, ne confère aucun droit supplémentaire d'utilisation, de
+reproduction, de modification, de distribution ou d'exploitation.
+
+4. RESTRICTIONS
+
+Sauf autorisation écrite préalable du Titulaire, il est interdit de :
+
+  a) copier, reproduire, distribuer, publier, transmettre ou mettre à disposition
+     le Logiciel, en tout ou partie, sous quelque forme que ce soit ;
+
+  b) modifier, adapter, traduire, décompiler, désosser ou effectuer toute
+     rétro-ingénierie du Logiciel ;
+
+  c) créer des œuvres dérivées, des produits, des services ou des intégrations
+     basés sur le Logiciel ;
+
+  d) utiliser le Logiciel à des fins commerciales, professionnelles ou de
+     production ;
+
+  e) vendre, louer, prêter, sous-licencier, céder ou autrement exploiter le
+     Logiciel ;
+
+  f) supprimer, masquer ou modifier les mentions de copyright, de licence ou de
+     propriété ;
+
+  g) utiliser les noms, marques, logos ou signes distinctifs du Titulaire sans
+     autorisation écrite.
+
+Les forks et téléchargements effectués au moyen des fonctionnalités de GitHub
+restent soumis aux conditions d'utilisation de GitHub. Aucune licence
+supplémentaire n'est accordée de ce fait.
+
+5. CONTRIBUTIONS
+
+Toute contribution proposée au Titulaire (pull request, correctif, suggestion ou
+autre retour) est fournie à titre gratuit et devient la propriété exclusive du
+Titulaire, sauf accord écrit contraire. Vous garantissez détenir les droits
+nécessaires sur toute contribution soumise et acceptez que le Titulaire puisse
+l'utiliser, la modifier et la distribuer sans restriction ni rémunération.
+
+6. COMPOSANTS TIERS
+
+Le Logiciel peut inclure des composants tiers soumis à leurs propres licences.
+La présente licence ne limite pas les droits accordés par ces licences tierces
+et ne s'applique pas aux composants concernés.
+
+7. ABSENCE DE GARANTIE
+
+LE LOGICIEL EST FOURNI « EN L'ÉTAT », SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU
+IMPLICITE, Y COMPRIS, SANS LIMITATION, LES GARANTIES DE QUALITÉ MARCHANDE,
+D'ADÉQUATION À UN USAGE PARTICULIER, D'ABSENCE DE CONTREFAÇON ET DE NON-
+INTERRUPTION.
+
+LE TITULAIRE NE GARANTIT PAS QUE LE LOGICIEL EST EXEMPT D'ERREURS, SÉCURISÉ,
+COMPLET OU CONFORME À UNE RÉGLEMENTATION PARTICULIÈRE. VOUS UTILISEZ LE LOGICIEL
+SOUS VOTRE ENTIÈRE RESPONSABILITÉ.
+
+8. LIMITATION DE RESPONSABILITÉ
+
+DANS LES LIMITES PERMISES PAR LA LOI APPLICABLE, LE TITULAIRE NE POURRA ÊTRE
+TENU RESPONSABLE D'AUCUN DOMMAGE INDIRECT, ACCESSOIRE, SPÉCIAL, PUNITIF OU
+CONSÉCUTIF, NI D'AUCUNE PERTE DE DONNÉES, DE CHIFFRE D'AFFAIRES, DE PROFITS OU
+D'OPPORTUNITÉS, RÉSULTANT DE L'UTILISATION OU DE L'IMPOSSIBILITÉ D'UTILISER LE
+LOGICIEL, MÊME SI LE TITULAIRE A ÉTÉ AVISÉ DE LA POSSIBILITÉ DE TELS DOMMAGES.
+
+9. RÉSILIATION
+
+Toute violation de la présente licence met fin immédiatement aux droits
+éventuellement accordés. Vous devez alors cesser toute utilisation du Logiciel et
+détruire toute copie en votre possession, sous réserve des droits impératifs
+prévus par la loi.
+
+10. DROIT APPLICABLE
+
+La présente licence est régie par le droit applicable au siège social du
+Titulaire. Tout litige relatif à sa validité, son interprétation ou son exécution
+relève des tribunaux compétents de ce siège, sous réserve des règles impératives
+applicables.
+
+11. CONTACT
+
+Pour toute demande de licence, de partenariat ou d'autorisation écrite, contactez
+le Titulaire via son compte GitHub.
+
+================================================================================
+ENGLISH VERSION
+================================================================================
+
+1. DEFINITIONS
+
+"Software" means all source code, object code, scripts, migrations,
+documentation, configuration files, trademarks, logos and any other element of
+the Document Extractor repository, including updates and successive versions.
+
+"Holder" means DocuScan, the owner of the intellectual property rights in the
+Software.
+
+"You" means any natural or legal person accessing the Software or its
+repository.
+
+2. INTELLECTUAL PROPERTY
+
+The Software is the exclusive property of the Holder and its licensors. It is
+protected by copyright, database, trademark and unfair competition laws, as well
+as applicable international treaties.
+
+No intellectual property right is transferred by this license. All rights not
+expressly granted are reserved by the Holder.
+
+3. SCOPE OF RIGHTS
+
+No license, express or implied, is granted in the Software, except the right to
+view the public repository on GitHub strictly as permitted by GitHub's Terms of
+Service.
+
+Access to the repository, including viewing, cloning or downloading permitted by
+GitHub, does not grant any additional right to use, reproduce, modify, distribute
+or exploit the Software.
+
+4. RESTRICTIONS
+
+Unless prior written authorization is obtained from the Holder, you may not:
+
+  a) copy, reproduce, distribute, publish, transmit or make the Software
+     available, in whole or in part, in any form;
+
+  b) modify, adapt, translate, decompile, disassemble or reverse engineer the
+     Software;
+
+  c) create derivative works, products, services or integrations based on the
+     Software;
+
+  d) use the Software for commercial, professional or production purposes;
+
+  e) sell, rent, lend, sublicense, assign or otherwise exploit the Software;
+
+  f) remove, obscure or alter any copyright, license or proprietary notice;
+
+  g) use the Holder's names, trademarks, logos or distinctive signs without
+     written authorization.
+
+Forks and downloads made through GitHub features remain subject to GitHub's
+Terms of Service. No additional license is granted thereby.
+
+5. CONTRIBUTIONS
+
+Any contribution submitted to the Holder (pull request, patch, suggestion or
+other feedback) is provided free of charge and becomes the exclusive property of
+the Holder, unless otherwise agreed in writing. You warrant that you hold the
+necessary rights in any submitted contribution and agree that the Holder may
+use, modify and distribute it without restriction or compensation.
+
+6. THIRD-PARTY COMPONENTS
+
+The Software may include third-party components governed by their own licenses.
+This license does not limit the rights granted by those third-party licenses and
+does not apply to such components.
+
+7. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING, WITHOUT LIMITATION, THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT AND UNINTERRUPTED OPERATION.
+
+THE HOLDER DOES NOT WARRANT THAT THE SOFTWARE IS ERROR-FREE, SECURE, COMPLETE OR
+COMPLIANT WITH ANY PARTICULAR REGULATION. YOU USE THE SOFTWARE ENTIRELY AT YOUR
+OWN RISK.
+
+8. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE HOLDER SHALL NOT BE
+LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE OR CONSEQUENTIAL DAMAGES,
+OR FOR ANY LOSS OF DATA, REVENUE, PROFITS OR OPPORTUNITIES, ARISING FROM THE USE
+OF OR INABILITY TO USE THE SOFTWARE, EVEN IF THE HOLDER HAS BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGES.
+
+9. TERMINATION
+
+Any breach of this license immediately terminates any rights granted. You must
+then cease all use of the Software and destroy all copies in your possession,
+subject to mandatory rights provided by law.
+
+10. GOVERNING LAW
+
+This license is governed by the laws applicable at the Holder's registered
+office. Any dispute concerning its validity, interpretation or performance shall
+be subject to the competent courts of that office, subject to mandatory rules.
+
+11. CONTACT
+
+For any license, partnership or written authorization request, contact the
+Holder through their GitHub account.

@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:document-extraction-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: false
+
+app:
+  storage:
+    type: local
+    local-path: ${java.io.tmpdir}/document-extraction-test-storage
+  security:
+    jwt:
+      secret: test-only-secret-0123456789abcdef0123456789abcdef
+      issuer: document-extraction-api-test
+      ttl-minutes: 60
+  bootstrap:
+    enabled: true
+    organization-name: Test organization
+    organization-slug: test
+    admin-email: admin@test.local
+    admin-password: TestPassword123!
+    admin-display-name: Test Admin
+  retention:
+    default-days: 30
+    purge-enabled: false
+  queue:
+    worker-enabled: false
+    poll-interval-ms: 60000
+    max-attempts: 3

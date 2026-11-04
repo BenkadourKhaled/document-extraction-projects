@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------------------
+# DocuScan — root repository
+# Applies to both document-extraction-api/ and project/.
+# ---------------------------------------------------------------------------
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+target/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Local runtime data (never commit documents, OCR data, or backups)
+data/
+tessdata/
+logs/
+uploads/
+backups/
+certs/
+*.log
+*.hprof
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Editors and OS files
+.idea/
+.vscode/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# Local Git history backups (created when consolidating the two sub-projects)
+.git.local-backup/

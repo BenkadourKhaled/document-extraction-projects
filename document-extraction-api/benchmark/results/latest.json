@@ -1,0 +1,74 @@
+{
+  "generatedAt": "2026-10-27T09:58:01.350Z",
+  "service": "document-extraction-api",
+  "corpus": {
+    "type": "synthetic",
+    "manifest": "benchmark/corpus/manifest.json",
+    "cases": 3
+  },
+  "methodology": {
+    "languageCodes": "Tesseract ISO 639-2 (fra, eng, ara)",
+    "pageSegmentationMode": "manifest psm, default 6",
+    "normalization": "NFC, whitespace collapsed, line endings normalized",
+    "metrics": "CER and WER computed with Levenshtein distance",
+    "aggregate": "weighted over concatenated expected and recognized text",
+    "note": "Synthetic corpus only; no customer acceptance claim."
+  },
+  "aggregate": {
+    "expectedCharacters": 447,
+    "actualCharacters": 447,
+    "expectedWords": 71,
+    "actualWords": 71,
+    "cer": 0.013422818791946308,
+    "wer": 0.014084507042253521,
+    "cerPercent": 1.342281879194631,
+    "werPercent": 1.4084507042253522
+  },
+  "cases": [
+    {
+      "id": "fr-invoice",
+      "file": "fr-invoice.png",
+      "language": "fra",
+      "psm": 6,
+      "expectedCharacters": 143,
+      "actualCharacters": 143,
+      "expectedWords": 29,
+      "actualWords": 29,
+      "cer": 0,
+      "wer": 0,
+      "cerPercent": 0,
+      "werPercent": 0,
+      "durationMs": 1237
+    },
+    {
+      "id": "en-invoice",
+      "file": "en-invoice.png",
+      "language": "eng",
+      "psm": 6,
+      "expectedCharacters": 136,
+      "actualCharacters": 136,
+      "expectedWords": 19,
+      "actualWords": 19,
+      "cer": 0,
+      "wer": 0,
+      "cerPercent": 0,
+      "werPercent": 0,
+      "durationMs": 1420
+    },
+    {
+      "id": "ar-invoice",
+      "file": "ar-invoice.png",
+      "language": "ara",
+      "psm": 6,
+      "expectedCharacters": 166,
+      "actualCharacters": 166,
+      "expectedWords": 23,
+      "actualWords": 23,
+      "cer": 0.03614457831325301,
+      "wer": 0.043478260869565216,
+      "cerPercent": 3.614457831325301,
+      "werPercent": 4.3478260869565215,
+      "durationMs": 1750
+    }
+  ]
+}

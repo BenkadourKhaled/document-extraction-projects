@@ -1,0 +1,6 @@
+INVOICE NO. 2026-001
+Customer: DocuScan Administration
+Date: October 27, 2026
+Subtotal: 12,500.00 DZD
+Tax: 2,375.00 DZD
+Total: 14,875.00 DZD

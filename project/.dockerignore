@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.vite
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+.github
+.idea
+.vscode
+*.log

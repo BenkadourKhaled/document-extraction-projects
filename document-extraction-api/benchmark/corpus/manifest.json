@@ -1,0 +1,23 @@
+[
+  {
+    "id": "fr-invoice",
+    "file": "fr-invoice.png",
+    "language": "fra",
+    "psm": 6,
+    "groundTruth": "fr-invoice.txt"
+  },
+  {
+    "id": "en-invoice",
+    "file": "en-invoice.png",
+    "language": "eng",
+    "psm": 6,
+    "groundTruth": "en-invoice.txt"
+  },
+  {
+    "id": "ar-invoice",
+    "file": "ar-invoice.png",
+    "language": "ara",
+    "psm": 6,
+    "groundTruth": "ar-invoice.txt"
+  }
+]
