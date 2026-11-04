@@ -61,6 +61,35 @@ l'infrastructure de l'organisation.
   audit, profils TLS et Prometheus optionnels, scripts de sauvegarde/restauration.
 - **Aucune dépendance à une IA générative**.
 
+### Captures d'écran
+
+Les captures suivantes proviennent de l'interface réelle, en thèmes sombre et clair,
+en français et en arabe (RTL).
+
+![Page de connexion sécurisée](docs/screenshots/login.png)
+
+*Page de connexion sécurisée.*
+
+![Espace d'extraction — thème sombre](docs/screenshots/dashboard-dark.png)
+
+*Espace d'extraction, thème sombre : dépôt du fichier, langues OCR et historique.*
+
+![Espace d'extraction — thème clair](docs/screenshots/dashboard-light.png)
+
+*Espace d'extraction, thème clair.*
+
+![Interface arabe avec prise en charge RTL](docs/screenshots/dashboard-ar.png)
+
+*Interface arabe (RTL) : le sens de lecture et la mise en page sont inversés.*
+
+![Résultat de l'extraction avec aperçu et texte OCR](docs/screenshots/extraction.png)
+
+*Résultat : aperçu du document et texte OCR côte à côte, avec export TXT/JSON.*
+
+![Administration des utilisateurs](docs/screenshots/users.png)
+
+*Administration des utilisateurs et des rôles.*
+
 ### Architecture
 
 ```text
@@ -508,6 +537,35 @@ OCR service**. Documents stay on the organization's infrastructure.
 - **Operations**: PostgreSQL 16, Flyway migrations, configurable retention,
   audit, optional TLS and Prometheus profiles, backup/restore scripts.
 - **No generative-AI dependency**.
+
+### Screenshots
+
+The following screenshots come from the real interface, in dark and light themes,
+in French and Arabic (RTL).
+
+![Secure sign-in page](docs/screenshots/login.png)
+
+*Secure sign-in page.*
+
+![Extraction workspace — dark theme](docs/screenshots/dashboard-dark.png)
+
+*Extraction workspace, dark theme: file dropzone, OCR languages and history.*
+
+![Extraction workspace — light theme](docs/screenshots/dashboard-light.png)
+
+*Extraction workspace, light theme.*
+
+![Arabic interface with RTL support](docs/screenshots/dashboard-ar.png)
+
+*Arabic interface (RTL): reading direction and layout are mirrored.*
+
+![Extraction result with preview and OCR text](docs/screenshots/extraction.png)
+
+*Result: document preview and OCR text side by side, with TXT/JSON export.*
+
+![User administration](docs/screenshots/users.png)
+
+*User and role administration.*
 
 ### Architecture
 
