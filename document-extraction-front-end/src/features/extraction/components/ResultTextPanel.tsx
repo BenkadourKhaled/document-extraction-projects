@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Copy, Check, FileJson, FileText, Search, Plus, RotateCcw } from 'lucide-react';
+import { Copy, Check, FileJson, FileText, Search, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { Extraction, ExtractionMethod, OcrLanguage } from '@/api/types';
-import { reprocessExtraction } from '@/api/extractionService';
-import { loadLanguages } from '@/utils/languageStorage';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import type { Extraction, ExtractionMethod } from '@/api/types';
 import { useCopyToClipboard } from '@/utils/useCopyToClipboard';
 import { downloadTxt, downloadJson } from '@/utils/download';
 import { findMatches, buildSegments } from '@/utils/search';
@@ -23,9 +19,7 @@ interface ResultTextPanelProps {
 
 export function ResultTextPanel({ extraction, onNewExtraction }: ResultTextPanelProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [reprocessing, setReprocessing] = useState(false);
   const [fullText, setFullText] = useState(extraction.fullText);
   const [pageTexts, setPageTexts] = useState<Record<number, string>>(
     Object.fromEntries(extraction.pages.map((p) => [p.number, p.text])),
