@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -56,17 +56,20 @@ public class PdfTextExtractor {
             }
 
             PDFRenderer renderer = new PDFRenderer(doc);
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
 
             List<PageResult> result = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
+                PDPage page = doc.getPage(i);
+                DisplayPage display = displayPage(page);
+                PositionedPdfTextStripper stripper = new PositionedPdfTextStripper(
+                        display.width(), display.height(), display.rotation());
                 stripper.setStartPage(i + 1);
                 stripper.setEndPage(i + 1);
                 String text = stripper.getText(doc).strip();
 
                 if (text.length() >= properties.nativeTextMinCharacters()) {
-                    result.add(new PageResult(i + 1, text, ExtractionMethod.NATIVE, null));
+                    result.add(new PageResult(
+                            i + 1, text, ExtractionMethod.NATIVE, null, stripper.spans(text)));
                 } else {
                     try {
                         BufferedImage image = renderer.renderImageWithDPI(i, safeDpi(doc, i));
@@ -84,6 +87,22 @@ public class PdfTextExtractor {
         } catch (Exception e) {
             throw new DocumentException(422, "PDF corrompu ou illisible.", e);
         }
+    }
+
+    private record DisplayPage(double width, double height, int rotation) {
+    }
+
+    private DisplayPage displayPage(PDPage page) {
+        PDRectangle crop = page.getCropBox();
+        int rotation = Math.floorMod(page.getRotation(), 360);
+        double width = crop.getWidth();
+        double height = crop.getHeight();
+        if (rotation == 90 || rotation == 270) {
+            double swapped = width;
+            width = height;
+            height = swapped;
+        }
+        return new DisplayPage(width, height, rotation);
     }
 
     /** Réduit le DPI si la page rendue dépasserait le plafond de pixels. */

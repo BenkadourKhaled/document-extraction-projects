@@ -3,6 +3,7 @@ package dz.DocuScan.document.controller;
 import dz.DocuScan.document.config.ExtractionProperties;
 import dz.DocuScan.document.exception.DocumentException;
 import dz.DocuScan.document.exception.GlobalExceptionHandler;
+import dz.DocuScan.document.service.ExtractionExportService;
 import dz.DocuScan.document.service.ExtractionService;
 import dz.DocuScan.document.security.JwtAuthenticationFilter;
 import java.util.UUID;
@@ -36,6 +37,7 @@ class ExtractionControllerTest {
 
     @Autowired MockMvc mvc;
     @MockBean ExtractionService service;
+    @MockBean ExtractionExportService exports;
     @MockBean ExtractionProperties properties;
 
     @Test

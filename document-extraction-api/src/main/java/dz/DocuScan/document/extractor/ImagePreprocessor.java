@@ -59,14 +59,27 @@ public class ImagePreprocessor {
             throw new IllegalArgumentException("Image illisible.");
         }
 
+        int originalWidth = source.getWidth();
+        int originalHeight = source.getHeight();
         BufferedImage gray = toGray(source);
         int initialThreshold = otsuThreshold(gray);
         double angle = detectSkew(gray, initialThreshold);
+        double appliedAngle = 0.0;
         if (Math.abs(angle) >= MIN_CORRECTION_DEGREES) {
             gray = rotate(gray, angle);
+            appliedAngle = angle;
         }
 
-        return new PreparedImage(gray, otsuThreshold(gray));
+        double scaleX = gray.getWidth() / (double) Math.max(1, originalWidth);
+        double scaleY = gray.getHeight() / (double) Math.max(1, originalHeight);
+        return new PreparedImage(
+                gray,
+                otsuThreshold(gray),
+                originalWidth,
+                originalHeight,
+                scaleX,
+                scaleY,
+                appliedAngle);
     }
 
     BufferedImage binarizeOtsu(PreparedImage prepared) {
@@ -306,6 +319,64 @@ public class ImagePreprocessor {
                 + integral[y0 * stride + x0];
     }
 
-    record PreparedImage(BufferedImage gray, int otsuThreshold) {
+    record BoundingBox(double x0, double y0, double x1, double y1) {
+    }
+
+    record PreparedImage(
+            BufferedImage gray,
+            int otsuThreshold,
+            int originalWidth,
+            int originalHeight,
+            double scaleX,
+            double scaleY,
+            double rotationDegrees) {
+
+        /**
+         * Maps a rectangle expressed in the preprocessed image back to the
+         * original image. The preprocessing pipeline only scales and rotates
+         * around the image centre, so the inverse transform is deterministic.
+         */
+        BoundingBox toOriginalBoundingBox(java.awt.Rectangle rect) {
+            double cx = gray.getWidth() / 2.0;
+            double cy = gray.getHeight() / 2.0;
+            double radians = Math.toRadians(rotationDegrees);
+            double cos = Math.cos(radians);
+            double sin = Math.sin(radians);
+
+            double[][] corners = {
+                    {rect.getMinX(), rect.getMinY()},
+                    {rect.getMaxX(), rect.getMinY()},
+                    {rect.getMinX(), rect.getMaxY()},
+                    {rect.getMaxX(), rect.getMaxY()}
+            };
+
+            double minX = Double.MAX_VALUE;
+            double minY = Double.MAX_VALUE;
+            double maxX = -Double.MAX_VALUE;
+            double maxY = -Double.MAX_VALUE;
+
+            for (double[] corner : corners) {
+                double dx = corner[0] - cx;
+                double dy = corner[1] - cy;
+                double rotatedX = cos * dx + sin * dy + cx;
+                double rotatedY = -sin * dx + cos * dy + cy;
+                double sourceX = rotatedX / Math.max(1e-6, scaleX);
+                double sourceY = rotatedY / Math.max(1e-6, scaleY);
+                minX = Math.min(minX, sourceX);
+                minY = Math.min(minY, sourceY);
+                maxX = Math.max(maxX, sourceX);
+                maxY = Math.max(maxY, sourceY);
+            }
+
+            return new BoundingBox(
+                    clamp(minX, originalWidth),
+                    clamp(minY, originalHeight),
+                    clamp(maxX, originalWidth),
+                    clamp(maxY, originalHeight));
+        }
+
+        private static double clamp(double value, double max) {
+            return Math.max(0.0, Math.min(Math.max(0.0, max), value));
+        }
     }
 }

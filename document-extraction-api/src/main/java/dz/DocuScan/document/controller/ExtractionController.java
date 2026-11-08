@@ -1,6 +1,5 @@
 package dz.DocuScan.document.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dz.DocuScan.document.config.ExtractionProperties;
 import dz.DocuScan.document.dto.BatchExtractionResponse;
 import dz.DocuScan.document.dto.ExtractionResponse;
@@ -9,11 +8,11 @@ import dz.DocuScan.document.exception.DocumentException;
 import dz.DocuScan.document.model.AuthenticatedUser;
 import dz.DocuScan.document.model.ExtractionJob;
 import dz.DocuScan.document.model.ExtractionStatus;
+import dz.DocuScan.document.service.ExtractionExportService;
 import dz.DocuScan.document.service.ExtractionService;
 import dz.DocuScan.document.web.RequestInfo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,16 +36,16 @@ import org.springframework.web.multipart.MultipartFile;
 public class ExtractionController {
 
     private final ExtractionService service;
+    private final ExtractionExportService exports;
     private final ExtractionProperties props;
-    private final ObjectMapper mapper;
 
     public ExtractionController(
             ExtractionService service,
-            ExtractionProperties props,
-            ObjectMapper mapper) {
+            ExtractionExportService exports,
+            ExtractionProperties props) {
         this.service = service;
+        this.exports = exports;
         this.props = props;
-        this.mapper = mapper;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -151,8 +150,8 @@ public class ExtractionController {
             @PathVariable UUID id,
             @RequestParam(defaultValue = "txt") String format,
             @AuthenticationPrincipal AuthenticatedUser user) {
-        ExtractionResponse response = service.response(service.get(id, user));
-        if (response.status() != ExtractionStatus.COMPLETED) {
+        ExtractionJob job = service.get(id, user);
+        if (job.getStatus() != ExtractionStatus.COMPLETED) {
             throw new DocumentException(409, "Le resultat n'est pas encore disponible.");
         }
 
@@ -161,15 +160,11 @@ public class ExtractionController {
         String extension;
 
         if ("txt".equalsIgnoreCase(format)) {
-            bytes = response.fullText().getBytes(StandardCharsets.UTF_8);
+            bytes = exports.txtBytes(job);
             type = MediaType.TEXT_PLAIN;
             extension = "txt";
         } else if ("json".equalsIgnoreCase(format)) {
-            try {
-                bytes = mapper.writeValueAsBytes(response);
-            } catch (Exception ex) {
-                throw new DocumentException(500, "Impossible de generer le JSON.", ex);
-            }
+            bytes = exports.jsonBytes(job);
             type = MediaType.APPLICATION_JSON;
             extension = "json";
         } else {

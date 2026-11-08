@@ -17,6 +17,8 @@ public class ExtractionJob {
     private final String languages;
     private final Instant createdAt;
     private final Instant retentionUntil;
+    private final UUID lineageId;
+    private final UUID sourceDocumentId;
 
     private volatile ExtractionStatus status = ExtractionStatus.PENDING;
     private volatile int pageCount;
@@ -39,6 +41,24 @@ public class ExtractionJob {
             String languages,
             Instant createdAt,
             Instant retentionUntil) {
+        this(id, organizationId, ownerId, fileName, mimeType, sizeBytes, sha256,
+                storageKey, languages, createdAt, retentionUntil, null, null);
+    }
+
+    public ExtractionJob(
+            UUID id,
+            UUID organizationId,
+            UUID ownerId,
+            String fileName,
+            String mimeType,
+            long sizeBytes,
+            String sha256,
+            String storageKey,
+            String languages,
+            Instant createdAt,
+            Instant retentionUntil,
+            UUID lineageId,
+            UUID sourceDocumentId) {
         this.id = id;
         this.organizationId = organizationId;
         this.ownerId = ownerId;
@@ -50,6 +70,8 @@ public class ExtractionJob {
         this.languages = languages;
         this.createdAt = createdAt;
         this.retentionUntil = retentionUntil;
+        this.lineageId = lineageId == null ? id : lineageId;
+        this.sourceDocumentId = sourceDocumentId;
     }
 
     /** Convenience constructor used by legacy unit tests that do not persist the job. */
@@ -124,6 +146,8 @@ public class ExtractionJob {
     public String getLanguages() { return languages; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getRetentionUntil() { return retentionUntil; }
+    public UUID getLineageId() { return lineageId; }
+    public UUID getSourceDocumentId() { return sourceDocumentId; }
     public ExtractionStatus getStatus() { return status; }
     public int getPageCount() { return pageCount; }
     public String getFullText() { return fullText; }

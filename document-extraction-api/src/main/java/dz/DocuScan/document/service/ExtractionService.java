@@ -179,7 +179,9 @@ public class ExtractionService {
                 now,
                 retention.defaultDays() > 0
                         ? now.plus(retention.defaultDays(), ChronoUnit.DAYS)
-                        : null);
+                        : null,
+                source.getLineageId(),
+                source.getId());
 
         try {
             int pages = countPages(job, bytes);
