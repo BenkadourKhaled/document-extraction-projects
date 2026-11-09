@@ -29,6 +29,10 @@ They are marked `RULE`. No AI/LLM call is added in this iteration. A future AI
 extractor must return a source span; a value without a verifiable span is stored
 as `UNVERIFIED`, never silently accepted.
 
+> Note: the existing OCR path already uses **Tesseract 5**, an LSTM-based OCR
+> engine. It is an AI/ML component but not a generative model or LLM. This
+> iteration does not change it and adds no AI call, secret or vector store.
+
 ### 2. Coordinates are normalized and rotation-aware
 
 For every source span DocuScan stores:

@@ -56,6 +56,23 @@ Tesseract et des données linguistiques locales.
 - **Thème clair/sombre**, responsive mobile, tablette et desktop.
 - **Accessibilité** : navigation clavier, ARIA, focus visible, zones `aria-live`.
 
+### IA et technologies
+
+Le frontend **n'exécute aucune IA** : l'IA d'OCR **Tesseract 5 (LSTM)** est
+exécutée côté API via **Tess4J 5.13.0**. L'interface consomme les résultats et les
+champs traçables, sans appel à un LLM ni à un service cloud.
+
+| Technologie | Version | Usage |
+| --- | --- | --- |
+| React | 18.3 | Interface de revue |
+| TypeScript | 5.5 | Typage strict |
+| Vite | 5.4 | Build et serveur de développement |
+| TanStack Query / Axios | 5 / 1.20 | Données serveur et appels API |
+| react-pdf / pdf.js | 7.7 | Aperçu PDF et surlignage |
+| Tailwind CSS / shadcn/ui | 3 / Radix UI | Design system |
+| i18next | 26 | Français, anglais, arabe (RTL) |
+| Vitest / Playwright | 2.1 / 1.64 | Tests unitaires et E2E |
+
 ### Durcissement V1.1
 
 - **Profil** : modification du nom d'affichage depuis le menu du compte.
@@ -396,6 +413,23 @@ data.
 - **Light/dark theme**, responsive mobile, tablet and desktop layouts.
 - **Accessibility**: keyboard navigation, ARIA, visible focus, `aria-live`
   regions.
+
+### AI and technologies
+
+The frontend **runs no AI**: the **Tesseract 5 (LSTM)** OCR AI runs in the API
+through **Tess4J 5.13.0**. The UI consumes results and traceable fields without
+calling an LLM or a cloud service.
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| React | 18.3 | Review UI |
+| TypeScript | 5.5 | Strict typing |
+| Vite | 5.4 | Build and dev server |
+| TanStack Query / Axios | 5 / 1.20 | Server data and API calls |
+| react-pdf / pdf.js | 7.7 | PDF preview and highlighting |
+| Tailwind CSS / shadcn/ui | 3 / Radix UI | Design system |
+| i18next | 26 | French, English, Arabic (RTL) |
+| Vitest / Playwright | 2.1 / 1.64 | Unit and E2E tests |
 
 ### V1.1 hardening
 

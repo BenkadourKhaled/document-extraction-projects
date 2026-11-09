@@ -65,6 +65,27 @@ l'infrastructure de l'organisation.
   audit, profils TLS et Prometheus optionnels, scripts de sauvegarde/restauration.
 - **Aucune dépendance à une IA générative**.
 
+### IA intégrée et technologies
+
+Cette version intègre une **IA d'OCR locale** : **Tesseract 5**, moteur OCR à
+réseaux de neurones **LSTM**, utilisé via **Tess4J 5.13.0** pour les PDF scannés
+et les images. Il ne s'agit pas d'une IA générative : aucun LLM, aucun appel à un
+service cloud et aucun `pgvector` ne sont utilisés.
+
+| Technologie | Version | Usage |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | via Tess4J 5.13.0 | OCR local français, anglais et arabe, y compris RTL |
+| Apache PDFBox | 3.0.5 | Texte natif, rendu des pages et positions des lignes |
+| Spring Boot | 3.3.13 / Java 21 | API REST, worker asynchrone et sécurité |
+| Prétraitement Java2D | — | Niveaux de gris, mise à l'échelle, redressement ±5°, binarisation Otsu/Sauvola |
+| PostgreSQL 16 / H2 | — | Métadonnées, jobs, audit ; H2 pour les tests |
+| React 18 / TypeScript / Vite 5 | — | Interface de revue et exports |
+
+Les champs structurés `reference_number` et `document_date` restent extraits par
+des **règles déterministes**. Le point d'extension `FieldRule` est prévu pour une
+future IA générative, qui devra fournir une source vérifiable ; une valeur sans
+span restera `UNVERIFIED`.
+
 ### Captures d'écran
 
 Les captures suivantes proviennent de l'interface réelle, en thèmes sombre et clair,
@@ -591,6 +612,26 @@ OCR service**. Documents stay on the organization's infrastructure.
 - **Operations**: PostgreSQL 16, Flyway migrations, configurable retention,
   audit, optional TLS and Prometheus profiles, backup/restore scripts.
 - **No generative-AI dependency**.
+
+### Integrated AI and technologies
+
+This version includes a **local OCR AI**: **Tesseract 5**, an **LSTM** neural
+OCR engine, used through **Tess4J 5.13.0** for scanned PDFs and images. It is not
+a generative AI: no LLM, no cloud service call and no `pgvector` are used.
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | via Tess4J 5.13.0 | Local French, English and Arabic OCR, including RTL |
+| Apache PDFBox | 3.0.5 | Native text, page rendering and line positions |
+| Spring Boot | 3.3.13 / Java 21 | REST API, asynchronous worker and security |
+| Java2D preprocessing | — | Grayscale, scaling, ±5° deskew, Otsu/Sauvola binarization |
+| PostgreSQL 16 / H2 | — | Metadata, jobs, audit; H2 for tests |
+| React 18 / TypeScript / Vite 5 | — | Review UI and exports |
+
+Structured fields `reference_number` and `document_date` are still extracted by
+**deterministic rules**. The `FieldRule` extension point is reserved for a future
+generative-AI extractor, which must provide a verifiable source; a value without
+a span will remain `UNVERIFIED`.
 
 ### Screenshots
 

@@ -2,7 +2,7 @@
 
 - Branche : `DocuScan-AI`
 - Dernière vérification : 2026-11-09
-- Périmètre : première tranche déterministe de traçabilité, sans IA ni `pgvector`
+- Périmètre : première tranche déterministe de traçabilité, sans IA générative ni `pgvector`
 
 ## Résumé
 
@@ -11,12 +11,33 @@ vérifiées localement. Les éléments restants relèvent soit de la validation 
 finale (job Docker/PostgreSQL/MinIO), soit d'itérations futures explicitement
 hors périmètre.
 
+## IA intégrée dans cette version
+
+L'IA présente est l'**OCR local Tesseract 5**, moteur à réseaux de neurones
+**LSTM**, intégré via **Tess4J 5.13.0** (langues `fra`, `eng`, `ara`). Elle est
+utilisée pour les PDF scannés et les images. Ce n'est pas une IA générative :
+aucun LLM, aucun appel cloud, aucun embedding et aucun `pgvector`.
+
+Les champs `reference_number` et `document_date` restent extraits par des règles
+déterministes. `FieldRule` est le point d'extension prévu pour une future IA
+générative, avec source vérifiable obligatoire.
+
+| Technologie | Version | Usage |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | Tess4J 5.13.0 | OCR local français, anglais et arabe |
+| Apache PDFBox | 3.0.5 | Texte natif, rendu et positions des lignes |
+| Spring Boot / Java | 3.3.13 / 21 | API, worker et sécurité |
+| PostgreSQL 16 / H2 | — | Production et tests |
+| Flyway | — | Migrations additives |
+| React / TypeScript / Vite | 18.3 / 5.5 / 5.4 | Interface de revue |
+| Vitest / Playwright | 2.1 / 1.64 | Tests unitaires et E2E |
+
 ## Matrice de vérification
 
 | # | Exigence | État | Preuve |
 | --- | --- | --- | --- |
-| 1 | Travailler sur la branche existante `DocuScan-AI` | ✅ | Branche unique, commits `051018c`, `383dd10`, `68c0765`, `fa00f41` |
-| 2 | Aucun LLM, aucune dépendance IA, aucun `pgvector` | ✅ | Aucun appel ni dépendance ajoutée ; `FieldRule` documenté comme point d'extension |
+| 1 | Travailler sur la branche existante `DocuScan-AI` | ✅ | Branche unique, commits `051018c`, `383dd10`, `68c0765`, `fa00f41`, `b8cb446` |
+| 2 | Aucune IA générative, aucun LLM, aucun `pgvector` | ✅ | Tesseract 5 LSTM est la seule IA ; aucun appel LLM ni dépendance vectorielle ; `FieldRule` documenté comme point d'extension |
 | 3 | Migrations Flyway additives | ✅ | `V3__field_traceability.sql` : colonnes et tables ajoutées, aucune colonne réécrite |
 | 4 | Compatibilité TXT/JSON existante | ✅ | JSON additif (`schema_version`, `fields`) ; TXT conserve le texte puis ajoute la section des champs |
 | 5 | Isolation par organisation et règles `ADMIN`/`REVIEWER`/`USER` | ✅ | Requêtes filtrées par `organization_id` ; accès vérifié avant lecture et correction |

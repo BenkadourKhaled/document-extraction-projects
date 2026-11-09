@@ -73,6 +73,25 @@ La V1 ajoute le socle professionnel attendu d'un produit commercial :
   `STORAGE_TYPE=s3`.
 - **Aucune dépendance IA générative** : Tesseract et PDFBox uniquement.
 
+### IA intégrée et technologies
+
+L'API intègre une **IA d'OCR locale** : **Tesseract 5**, moteur à réseaux de
+neurones **LSTM**, via **Tess4J 5.13.0**. Elle traite les PDF scannés et les
+images en français, anglais et arabe. Aucun LLM, aucun service cloud et aucun
+`pgvector` ne sont utilisés ; les champs structurés restent extraits par des
+règles déterministes.
+
+| Technologie | Version | Usage |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | Tess4J 5.13.0 | OCR local FR/EN/AR, support RTL |
+| Apache PDFBox | 3.0.5 | Extraction du texte natif, rendu et positions des lignes |
+| Spring Boot | 3.3.13 | API REST, worker, sécurité, audit |
+| Java | 21 | Runtime cible et CI |
+| PostgreSQL 16 / H2 | — | Production et tests (mode PostgreSQL) |
+| Flyway | — | Migrations additives, dont `V3__field_traceability.sql` |
+| MinIO / S3 | — | Stockage des fichiers source |
+| Données Tesseract | — | Modèles linguistiques locaux `fra`, `eng`, `ara` |
+
 ### Durcissement V1.1
 
 - **Politique de mot de passe** : 12 à 128 caractères pour la création, le
@@ -533,6 +552,24 @@ V1 adds the professional foundation of a commercial product:
 - **Two storage backends**: local disk by default, MinIO/S3 with
   `STORAGE_TYPE=s3`.
 - **No generative AI dependency**: Tesseract and PDFBox only.
+
+### Integrated AI and technologies
+
+The API includes a **local OCR AI**: **Tesseract 5**, an **LSTM** neural OCR
+engine, through **Tess4J 5.13.0**. It processes scanned PDFs and images in
+French, English and Arabic. No LLM, no cloud service and no `pgvector` are used;
+structured fields remain extracted by deterministic rules.
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | Tess4J 5.13.0 | Local FR/EN/AR OCR, RTL support |
+| Apache PDFBox | 3.0.5 | Native text extraction, rendering and line positions |
+| Spring Boot | 3.3.13 | REST API, worker, security, audit |
+| Java | 21 | Target runtime and CI |
+| PostgreSQL 16 / H2 | — | Production and tests (PostgreSQL mode) |
+| Flyway | — | Additive migrations, including `V3__field_traceability.sql` |
+| MinIO / S3 | — | Source file storage |
+| Tesseract data | — | Local `fra`, `eng`, `ara` language models |
 
 ### V1.1 hardening
 
