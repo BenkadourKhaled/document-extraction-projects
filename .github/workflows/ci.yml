@@ -78,6 +78,37 @@ jobs:
       - name: Production build
         run: npm run build
 
+  frontend-coverage:
+    name: Frontend coverage (Node 22)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: document-extraction-front-end
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: document-extraction-front-end/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit test coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: document-extraction-front-end/coverage
+          retention-days: 7
+
   docker:
     name: Docker integration (PostgreSQL + MinIO + OCR + E2E)
     runs-on: ubuntu-latest

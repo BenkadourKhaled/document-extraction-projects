@@ -53,6 +53,10 @@ l'infrastructure de l'organisation.
   redémarrage.
 - **Historique serveur** : recherche par nom ou contenu, filtre par statut,
   pagination, aperçu authentifié et téléchargement TXT/JSON.
+- **Champs traçables** : extraction déterministe de `reference_number` et
+  `document_date`, source page/ligne avec bbox normalisée, statuts `VERIFIED` /
+  `UNVERIFIED` / `AMBIGUOUS` et corrections append-only appliquées à toute la
+  lignée du document.
 - **Comptes et rôles** : `ADMIN`, `REVIEWER`, `USER`, avec portée par organisation.
 - **Sécurité** : BCrypt, JWT signé, révocation de session, limitation des
   tentatives de connexion, politique de mot de passe 12–128 caractères.
@@ -324,8 +328,10 @@ npm.cmd run dev
 3. **Traitement** asynchrone avec statut en temps réel et possibilité
    d'annulation.
 4. **Résultat** en vue scindée : aperçu du fichier, texte complet ou par page,
-   badge `NATIVE` / `OCR`, recherche et correction.
-5. **Export** : copie, téléchargement `.txt` ou `.json`.
+   badge `NATIVE` / `OCR`, recherche, onglet **Champs** avec mise en évidence de
+   la source et correction.
+5. **Export** : copie, téléchargement `.txt` ou `.json` incluant les valeurs
+   effectives des champs.
 6. **Historique** : recherche, filtres, réouverture avec aperçu source,
    suppression.
 
@@ -349,6 +355,8 @@ Base : `/api/v1` (via nginx en Docker, ou directement
 | `GET` | `/extractions/{id}` | Statut et résultat |
 | `GET` | `/extractions/{id}/file` | Fichier source authentifié |
 | `GET` | `/extractions/{id}/download?format=txt\|json` | Résultat |
+| `GET` | `/extractions/{id}/fields` | Champs, sources et corrections |
+| `POST` | `/extractions/{id}/fields/{fieldKey}/corrections` | Correction append-only |
 | `DELETE` | `/extractions/{id}` | Supprime un document |
 | `GET` | `/documents` | Historique, recherche, pagination |
 | `DELETE` | `/documents` | Vide les documents de l'utilisateur |
@@ -356,6 +364,20 @@ Base : `/api/v1` (via nginx en Docker, ou directement
 
 Statuts d'extraction : `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`,
 `CANCELLED`.
+
+Les champs structurés sont stockés séparément du texte : valeur brute, valeur
+normalisée (uniquement pour la comparaison) et valeur effective (dernière
+correction de la lignée, sinon valeur brute). Une valeur sans source fiable est
+`UNVERIFIED` ; une date dont l'ordre jour/mois ou le calendrier n'est pas prouvé
+est `AMBIGUOUS`. Les corrections sont ajoutées à l'historique et ne modifient
+jamais la valeur brute. Les exports TXT/JSON passent par le même service que
+l'API ; le JSON conserve ses clés existantes et ajoute `schema_version` et
+`fields`.
+
+Cette itération reste déterministe : aucun LLM et aucun `pgvector`. Le point
+d'extension `FieldRule` permettra d'ajouter un extracteur IA plus tard, à
+condition qu'il retourne une source vérifiable ; une valeur sans span reste
+`UNVERIFIED`.
 
 Exemple d'upload :
 
@@ -530,6 +552,10 @@ OCR service**. Documents stay on the organization's infrastructure.
   a restart.
 - **Server-side history**: search by name or content, status filter, pagination,
   authenticated preview and TXT/JSON download.
+- **Traceable fields**: deterministic extraction of `reference_number` and
+  `document_date`, page/line source with a normalized bbox, `VERIFIED` /
+  `UNVERIFIED` / `AMBIGUOUS` statuses and append-only corrections applied across
+  the document lineage.
 - **Accounts and roles**: `ADMIN`, `REVIEWER`, `USER`, scoped to an organization.
 - **Security**: BCrypt, signed JWT, session revocation, login throttling and a
   12–128 character password policy.
@@ -798,8 +824,8 @@ npm.cmd run dev
 2. **Upload** a PDF or image, check its name and size, select OCR languages.
 3. **Processing** with live status and cancellation.
 4. **Result** in a split view: file preview, full or per-page text, `NATIVE` /
-   `OCR` badge, search and correction.
-5. **Export**: copy, `.txt` or `.json` download.
+   `OCR` badge, search, a **Fields** tab with source highlighting and correction.
+5. **Export**: copy, `.txt` or `.json` download including effective field values.
 6. **History**: search, filters, reopen with source preview, delete.
 
 ### Main API
@@ -822,6 +848,8 @@ Base: `/api/v1` (through nginx in Docker, or directly at
 | `GET` | `/extractions/{id}` | Status and result |
 | `GET` | `/extractions/{id}/file` | Authenticated source file |
 | `GET` | `/extractions/{id}/download?format=txt\|json` | Result |
+| `GET` | `/extractions/{id}/fields` | Fields, sources and corrections |
+| `POST` | `/extractions/{id}/fields/{fieldKey}/corrections` | Append-only correction |
 | `DELETE` | `/extractions/{id}` | Delete a document |
 | `GET` | `/documents` | History, search, pagination |
 | `DELETE` | `/documents` | Clear the user's documents |
@@ -829,6 +857,18 @@ Base: `/api/v1` (through nginx in Docker, or directly at
 
 Extraction statuses: `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`,
 `CANCELLED`.
+
+Structured fields are stored separately from the text: raw value, normalized
+value (comparison only) and effective value (latest correction in the lineage,
+otherwise the raw value). A value without a reliable source is `UNVERIFIED`; a
+date whose day/month order or calendar cannot be proven is `AMBIGUOUS`.
+Corrections are appended to the history and never modify the raw value. TXT/JSON
+exports use the same service as the API; JSON keeps every existing key and adds
+`schema_version` and `fields`.
+
+This iteration stays deterministic: no LLM and no `pgvector`. The `FieldRule`
+extension point will allow adding an AI extractor later, provided it returns a
+verifiable source; a value without a span remains `UNVERIFIED`.
 
 Upload example:
 

@@ -11,6 +11,7 @@ import dz.DocuScan.document.model.ExtractionStatus;
 import dz.DocuScan.document.service.ExtractionExportService;
 import dz.DocuScan.document.service.ExtractionService;
 import dz.DocuScan.document.web.RequestInfo;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -146,6 +147,10 @@ public class ExtractionController {
     }
 
     @GetMapping("/{id}/download")
+    @Operation(
+            summary = "Download the extraction as TXT or JSON",
+            description = "TXT keeps the full text then appends the effective field values. JSON keeps "
+                    + "the existing keys and adds schema_version and fields. Both include corrections.")
     public ResponseEntity<byte[]> download(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "txt") String format,

@@ -78,11 +78,13 @@ observable and testable.
 ```
 effective_value = latest current correction in the lineage
                   if one exists
-                  else extracted normalized value
+                  else extracted raw value
 ```
 
 The effective value is computed in one service method used by the field API,
-the TXT export and the JSON export. A partial PostgreSQL index is not used
+the TXT export and the JSON export. Corrections never rewrite `raw_value`, so
+Arabic-Indic/Persian digits and the original logical order remain available even
+after review. A partial PostgreSQL index is not used
 because H2 must stay compatible: a nullable `active_marker` column plus a unique
 index on `(field_id, active_marker)` gives the same guarantee on both databases
 (multiple `NULL` values are allowed, at most one active row per field). The
@@ -110,18 +112,30 @@ Both export paths (`ExtractionController` for one document and
 The stored `raw_value` is the exact text detected in the source after removing
 only invisible control characters. `normalized_value` is NFC and folds
 Arabic-Indic/Persian digits to ASCII for comparison and search. Digit folding is
-never used for display or export. `dir="auto"` and `<bdi>` isolate mixed values
-in the UI. The server never inserts Unicode bidi control characters.
+never used for display or export. `dir="auto"` isolates mixed values in the UI.
+The server never inserts Unicode bidi control characters.
 
 Date parsing marks a value `AMBIGUOUS` when the day/month order or the calendar
 (Gregorian vs Hijri) cannot be proven. DocuScan never guesses.
 
 ### 8. No pgvector in this iteration
 
-The schema contains no vector column and no pgvector extension. The field model
-and `FieldExtractor` extension point are ready for an optional PostgreSQL
-migration and a separate test profile if semantic search becomes a real
-requirement.
+The schema contains no vector column and no pgvector extension. No LLM or
+embedding call is made. The field model, the append-only correction history and
+the deterministic rules are ready for an optional PostgreSQL migration and a
+separate test profile if semantic search becomes a real requirement.
+
+### 9. AI extension point (documented, not implemented)
+
+`FieldRule` is the extension point: a future AI extractor must implement the
+same contract and return a `FieldMatch` with the exact `rawValue` observed in the
+line, plus a verification status. `FieldExtractionService` maps that value to an
+existing page span; if no span covers it, the field is persisted as `UNVERIFIED`
+and is never given invented geometry. The AI layer must therefore run on the
+already-extracted page text/spans and may not bypass the append-only correction
+or organization-isolation rules. This iteration implements only
+`ReferenceNumberRule` and `DocumentDateRule`; no AI interface, dependency,
+secret or vector store is added.
 
 ## Rollback
 

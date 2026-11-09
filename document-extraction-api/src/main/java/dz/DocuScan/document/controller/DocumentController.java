@@ -9,6 +9,7 @@ import dz.DocuScan.document.model.ExtractionStatus;
 import dz.DocuScan.document.service.ExtractionExportService;
 import dz.DocuScan.document.service.ExtractionService;
 import dz.DocuScan.document.web.RequestInfo;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.io.ByteArrayOutputStream;
@@ -60,6 +61,10 @@ public class DocumentController {
     }
 
     @PostMapping("/zip")
+    @Operation(
+            summary = "Download several extractions as a ZIP archive",
+            description = "Each entry is produced by the same export service as the single-document "
+                    + "download, so effective field values and corrections are included.")
     public ResponseEntity<byte[]> zip(
             @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody ZipDownloadRequest request) {

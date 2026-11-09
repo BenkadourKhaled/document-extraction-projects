@@ -58,6 +58,10 @@ La V1 ajoute le socle professionnel attendu d'un produit commercial :
   par statut.
 - **Aperçu et téléchargement** : fichier source authentifié, résultat TXT ou
   JSON.
+- **Champs traçables** : `reference_number` et `document_date` détectés par des
+  règles déterministes, source page/ligne avec bbox normalisée, statuts
+  `VERIFIED` / `UNVERIFIED` / `AMBIGUOUS` et corrections append-only propagées à
+  toute la lignée du document.
 - **Annulation/suppression** : suppression du document, du fichier source et du
   job associé.
 - **Audit** : connexion, gestion des comptes, changement de mot de passe, création,
@@ -250,6 +254,8 @@ Base : `http://localhost:8080/api/v1`.
 | `GET` | `/extractions/{id}` | Statut et résultat |
 | `GET` | `/extractions/{id}/file` | Fichier source authentifié |
 | `GET` | `/extractions/{id}/download?format=txt\|json` | Résultat |
+| `GET` | `/extractions/{id}/fields` | Champs, sources et corrections |
+| `POST` | `/extractions/{id}/fields/{fieldKey}/corrections` | Correction append-only |
 | `DELETE` | `/extractions/{id}` | Supprime le document |
 | `GET` | `/documents` | Historique, recherche, pagination |
 | `DELETE` | `/documents` | Vide vos propres documents |
@@ -290,6 +296,18 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```
 
 Statuts : `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`.
+
+Les champs structurés séparent la valeur brute, la valeur normalisée (réservée à
+la comparaison) et la valeur effective (dernière correction de la lignée, sinon
+valeur brute). Une valeur sans source fiable est `UNVERIFIED` ; une date dont
+l'ordre jour/mois ou le calendrier n'est pas prouvé est `AMBIGUOUS`. Les
+corrections sont append-only et ne modifient jamais la valeur brute. Les exports
+TXT/JSON utilisent le même service que l'API ; le JSON est additif
+(`schema_version`, `fields`).
+
+Aucun LLM et aucun `pgvector` ne sont utilisés dans cette version. Un futur
+extracteur IA devra implémenter `FieldRule` et retourner une source vérifiable ;
+une valeur sans span reste `UNVERIFIED`.
 
 #### Historique et recherche
 
@@ -480,6 +498,10 @@ V1 adds the professional foundation of a commercial product:
   Unicode normalization and multi-script passes.
 - **Server history**: paginated list, search by name or content, status filter.
 - **Preview and download**: authenticated source file, TXT or JSON result.
+- **Traceable fields**: `reference_number` and `document_date` detected by
+  deterministic rules, page/line source with a normalized bbox, `VERIFIED` /
+  `UNVERIFIED` / `AMBIGUOUS` statuses and append-only corrections propagated
+  across the document lineage.
 - **Cancel/delete**: removes the document, source file and associated job.
 - **Audit**: login, account management, password changes, creation, deletion and
   retention purge.
@@ -640,12 +662,25 @@ Base URL: `http://localhost:8080/api/v1`.
 | `GET` | `/extractions/{id}` | Status and result |
 | `GET` | `/extractions/{id}/file` | Authenticated source file |
 | `GET` | `/extractions/{id}/download?format=txt\|json` | Result download |
+| `GET` | `/extractions/{id}/fields` | Fields, sources and corrections |
+| `POST` | `/extractions/{id}/fields/{fieldKey}/corrections` | Append-only correction |
 | `DELETE` | `/extractions/{id}` | Delete a document |
 | `GET` | `/documents` | History, search, pagination |
 | `DELETE` | `/documents` | Clear your own documents |
 | `GET` | `/audit` | Audit log (admin) |
 
 Statuses: `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`.
+
+Structured fields separate the raw value, the normalized value (comparison only)
+and the effective value (latest correction in the lineage, otherwise the raw
+value). A value without a reliable source is `UNVERIFIED`; a date whose
+day/month order or calendar cannot be proven is `AMBIGUOUS`. Corrections are
+append-only and never modify the raw value. TXT/JSON exports use the same service
+as the API; JSON is additive (`schema_version`, `fields`).
+
+No LLM and no `pgvector` are used in this version. A future AI extractor must
+implement `FieldRule` and return a verifiable source; a value without a span
+remains `UNVERIFIED`.
 
 ### Configuration
 
