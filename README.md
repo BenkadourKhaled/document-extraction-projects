@@ -379,6 +379,29 @@ d'extension `FieldRule` permettra d'ajouter un extracteur IA plus tard, à
 condition qu'il retourne une source vérifiable ; une valeur sans span reste
 `UNVERIFIED`.
 
+#### Traçabilité des champs — état de l'itération
+
+| Exigence | État | Mise en œuvre |
+| --- | --- | --- |
+| Modèle champ, source et correction | ✅ | Migration additive `V3`, tables `extracted_fields`, `field_sources`, `field_corrections` |
+| Extraction déterministe | ✅ | `ReferenceNumberRule` et `DocumentDateRule`, label obligatoire |
+| Source vérifiable | ✅ | Spans ligne PDF/OCR, bbox normalisée, page, dimensions et rotation |
+| Valeurs brute, normalisée et effective | ✅ | Colonnes séparées, valeur effective calculée sans réécrire la valeur brute |
+| Corrections append-only | ✅ | Historique complet, dernier correctif actif, propagation à la lignée |
+| Arabe, chiffres arabes et bidi | ✅ | Valeur brute préservée, normalisation réservée à la comparaison, `dir="auto"` |
+| Exports TXT/JSON | ✅ | Service partagé pour le téléchargement simple et le ZIP ; JSON additif |
+| Revue dans l'interface | ✅ | Onglet **Champs**, statuts, source, surlignage, correction et historique |
+| Isolation et rôles | ✅ | Requêtes filtrées par organisation, accès vérifié avant lecture/écriture |
+| Tests et CI | ✅ | 69 tests backend, 44 tests frontend, E2E et job de couverture |
+
+**Hors périmètre de cette itération** : LLM/IA générative, `pgvector`, autres
+champs métier, spans mot/caractère, validation à quatre yeux, table dédiée aux
+spans, SSO/MFA, quotas, file Redis et export PDF avec couche texte. Les décisions
+sont détaillées dans
+[`docs/adr/0001-field-traceability.md`](docs/adr/0001-field-traceability.md) et
+l'état complet est suivi dans
+[`docs/implementation-status.md`](docs/implementation-status.md).
+
 Exemple d'upload :
 
 ```bash
@@ -500,6 +523,9 @@ Ils lisent `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` depuis
   organisation sont prévus pour les versions suivantes.
 - Les JWT sont stockés dans `localStorage` ; une CSP stricte est recommandée au
   niveau du proxy de production.
+- **Traçabilité** : seuls `reference_number` et `document_date` sont extraits ;
+  les spans sont au niveau ligne ; la dernière correction fait foi (pas de
+  validation à quatre yeux ni de suppression) ; aucun LLM ni `pgvector`.
 
 ### Documentation détaillée
 
@@ -510,6 +536,8 @@ Ils lisent `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` depuis
 | [`document-extraction-api/SECURITY.md`](document-extraction-api/SECURITY.md) | Contrôles et checklist de sécurité |
 | [`document-extraction-api/benchmark/README.md`](document-extraction-api/benchmark/README.md) | Benchmark OCR synthétique |
 | [`document-extraction-front-end/README.md`](document-extraction-front-end/README.md) | Référence complète du frontend |
+| [`docs/adr/0001-field-traceability.md`](docs/adr/0001-field-traceability.md) | Décisions de traçabilité des champs |
+| [`docs/implementation-status.md`](docs/implementation-status.md) | Matrice de vérification et reste à faire |
 
 ### Licence
 
@@ -870,6 +898,29 @@ This iteration stays deterministic: no LLM and no `pgvector`. The `FieldRule`
 extension point will allow adding an AI extractor later, provided it returns a
 verifiable source; a value without a span remains `UNVERIFIED`.
 
+#### Field traceability — iteration status
+
+| Requirement | Status | Implementation |
+| --- | --- | --- |
+| Field, source and correction model | ✅ | Additive `V3` migration, `extracted_fields`, `field_sources`, `field_corrections` |
+| Deterministic extraction | ✅ | `ReferenceNumberRule` and `DocumentDateRule`, label required |
+| Verifiable source | ✅ | PDF/OCR line spans, normalized bbox, page, dimensions and rotation |
+| Raw, normalized and effective values | ✅ | Separate columns; effective value computed without rewriting the raw value |
+| Append-only corrections | ✅ | Full history, latest active correction, lineage-wide propagation |
+| Arabic, Arabic-Indic digits and bidi | ✅ | Raw value preserved, normalization limited to comparison, `dir="auto"` |
+| TXT/JSON exports | ✅ | Shared service for single download and ZIP; additive JSON |
+| Review UI | ✅ | **Fields** tab, statuses, source, highlighting, correction and history |
+| Organization isolation and roles | ✅ | Organization-scoped queries, access checked before read/write |
+| Tests and CI | ✅ | 69 backend tests, 44 frontend tests, E2E and coverage job |
+
+**Out of scope for this iteration**: LLM/generative AI, `pgvector`, additional
+business fields, word/character spans, four-eyes validation, dedicated span
+table, SSO/MFA, quotas, Redis queue and PDF export with a text layer. Decisions
+are documented in
+[`docs/adr/0001-field-traceability.md`](docs/adr/0001-field-traceability.md) and
+the complete status is tracked in
+[`docs/implementation-status.md`](docs/implementation-status.md).
+
 Upload example:
 
 ```bash
@@ -988,6 +1039,9 @@ They read `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` from
   planned for later versions.
 - JWTs are stored in `localStorage`; a strict CSP is recommended at the production
   proxy.
+- **Traceability**: only `reference_number` and `document_date` are extracted;
+  spans are line-level; the latest correction wins (no four-eyes approval or
+  deletion); no LLM or `pgvector`.
 
 ### Detailed documentation
 
@@ -998,6 +1052,8 @@ They read `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` from
 | [`document-extraction-api/SECURITY.md`](document-extraction-api/SECURITY.md) | Security controls and checklist |
 | [`document-extraction-api/benchmark/README.md`](document-extraction-api/benchmark/README.md) | Synthetic OCR benchmark |
 | [`document-extraction-front-end/README.md`](document-extraction-front-end/README.md) | Full frontend reference |
+| [`docs/adr/0001-field-traceability.md`](docs/adr/0001-field-traceability.md) | Field traceability decisions |
+| [`docs/implementation-status.md`](docs/implementation-status.md) | Verification matrix and remaining work |
 
 ### License
 

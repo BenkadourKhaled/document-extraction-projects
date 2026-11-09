@@ -73,6 +73,22 @@ Tesseract et des données linguistiques locales.
 - **Validation E2E** : parcours Playwright connexion/upload/résultat/historique,
   administration et révocation de session.
 
+### Revue des champs et traçabilité
+
+- **Onglet Champs** dans le panneau de résultat : libellé, valeur brute, valeur
+  effective, statut `VERIFIED` / `UNVERIFIED` / `AMBIGUOUS` et badge « corrigé ».
+- **Source vérifiable** : bouton vers la page source et surlignage de la bbox
+  normalisée sur l'aperçu, sans reconstruction de coordonnées côté client.
+- **Correction** : dialogue avec motif, historique append-only et valeur effective
+  mise à jour ; la valeur brute n'est jamais réécrite.
+- **Exports serveur** : les téléchargements TXT/JSON utilisent
+  `GET /extractions/{id}/download` et incluent les valeurs effectives ; l'UI ne
+  reconstruit plus les fichiers localement.
+- **Bidi** : les valeurs utilisent `dir="auto"`, les chiffres arabes/persans sont
+  affichés tels quels et la normalisation reste côté API.
+- **Tests** : Vitest/MSW pour les champs, corrections, historique et surlignage ;
+  parcours Playwright pour la revue et la persistance après réouverture.
+
 ### Architecture
 
 ```text
@@ -87,6 +103,9 @@ Navigateur
        ├─ POST   /api/v1/extractions              (upload multipart, 202)
        ├─ GET    /api/v1/extractions/{id}         (polling)
        ├─ GET    /api/v1/extractions/{id}/file    (aperçu authentifié)
+       ├─ GET    /api/v1/extractions/{id}/fields  (champs, sources, corrections)
+       ├─ POST   /api/v1/extractions/{id}/fields/{key}/corrections (correction)
+       ├─ GET    /api/v1/extractions/{id}/download (export TXT/JSON serveur)
        ├─ GET    /api/v1/documents                (historique serveur)
        └─ DELETE /api/v1/extractions/{id}         (annulation/suppression)
 ```
@@ -301,6 +320,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
   message de repli et le téléchargement du fichier original sont fournis.
 - L'historique est partagé au niveau de l'organisation pour les rôles
   `ADMIN`/`REVIEWER`.
+- **Traçabilité** : l'interface affiche uniquement les champs extraits par l'API ;
+  seuls `reference_number` et `document_date` sont disponibles ; les surlignages
+  sont au niveau ligne ; aucune IA ni `pgvector`.
 
 ### Structure du projet
 
@@ -322,6 +344,7 @@ playwright.config.ts    URL, credentials et navigateur E2E
 
 ### Feuille de route
 
+- Couche IA optionnelle via `FieldRule`, avec source vérifiable obligatoire.
 - SSO, facturation et quotas par organisation.
 - Export PDF avec couche texte.
 - Segmentation de tableaux et reconstruction de l'ordre de lecture.
@@ -388,6 +411,22 @@ data.
 - **E2E validation**: Playwright flows for login/upload/result/history, user
   administration and session revocation.
 
+### Field review and traceability
+
+- **Fields tab** in the result panel: label, raw value, effective value,
+  `VERIFIED` / `UNVERIFIED` / `AMBIGUOUS` status and a “corrected” badge.
+- **Verifiable source**: a button jumps to the source page and highlights the
+  normalized bbox on the preview, without rebuilding coordinates on the client.
+- **Correction**: dialog with a reason, append-only history and an updated
+  effective value; the raw value is never rewritten.
+- **Server exports**: TXT/JSON downloads use
+  `GET /extractions/{id}/download` and include effective values; the UI no longer
+  rebuilds files locally.
+- **Bidi**: values use `dir="auto"`, Arabic-Indic/Persian digits are displayed
+  as-is and normalization stays on the API side.
+- **Tests**: Vitest/MSW for fields, corrections, history and highlighting;
+  Playwright flow for review and persistence after reopening.
+
 ### Architecture
 
 ```text
@@ -402,6 +441,9 @@ Browser
        ├─ POST   /api/v1/extractions              (multipart upload, 202)
        ├─ GET    /api/v1/extractions/{id}         (polling)
        ├─ GET    /api/v1/extractions/{id}/file    (authenticated preview)
+       ├─ GET    /api/v1/extractions/{id}/fields  (fields, sources, corrections)
+       ├─ POST   /api/v1/extractions/{id}/fields/{key}/corrections (correction)
+       ├─ GET    /api/v1/extractions/{id}/download (server TXT/JSON export)
        ├─ GET    /api/v1/documents                (server history)
        └─ DELETE /api/v1/extractions/{id}         (cancel/delete)
 ```
@@ -582,6 +624,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 - TIFF files are accepted by OCR; inline preview depends on the browser. A fallback
   message and original-file download are provided.
 - History is shared at organization level for `ADMIN`/`REVIEWER` roles.
+- **Traceability**: the UI only displays fields extracted by the API; only
+  `reference_number` and `document_date` are available; highlights are
+  line-level; no AI or `pgvector`.
 
 ### Project structure
 
@@ -603,6 +648,7 @@ playwright.config.ts    E2E URL, credentials and browser settings
 
 ### Roadmap
 
+- Optional AI layer through `FieldRule`, with a mandatory verifiable source.
 - SSO, billing and per-organization quotas.
 - PDF export with a text layer.
 - Table segmentation and reading-order reconstruction.

@@ -309,6 +309,24 @@ Aucun LLM et aucun `pgvector` ne sont utilisés dans cette version. Un futur
 extracteur IA devra implémenter `FieldRule` et retourner une source vérifiable ;
 une valeur sans span reste `UNVERIFIED`.
 
+#### Traçabilité des champs — état d'implémentation
+
+| Composant | État | Détail |
+| --- | --- | --- |
+| Schéma | ✅ | `V3__field_traceability.sql` : lignée, champs, sources et corrections |
+| Règles | ✅ | `FieldRule`, `ReferenceNumberRule`, `DocumentDateRule` |
+| Spans | ✅ | Ligne, bbox `[x0,y0,x1,y1]` normalisée, dimensions et rotation de page |
+| Normalisation | ✅ | NFC + repli des chiffres arabes/persans pour la comparaison uniquement |
+| API | ✅ | `GET /fields`, `POST /fields/{fieldKey}/corrections` |
+| Exports | ✅ | `ExtractionExportService` partagé, JSON additif |
+| Sécurité | ✅ | Filtrage `organization_id`, accès vérifié, audit `FIELD_CORRECTED` |
+| Tests | ✅ | Unités + intégration lignée, corrections et exports |
+
+Les décisions sont détaillées dans
+[`../docs/adr/0001-field-traceability.md`](../docs/adr/0001-field-traceability.md)
+et l'état complet dans
+[`../docs/implementation-status.md`](../docs/implementation-status.md).
+
 #### Historique et recherche
 
 ```bash
@@ -426,6 +444,9 @@ La checklist complète est dans [SECURITY.md](SECURITY.md). Points minimum :
   client anonymisé et approuvé pour le test.
 - Les images MinIO officielles ne sont plus publiées ; le miroir par défaut doit
   être vérifié et épinglé, ou remplacé par un stockage S3 géré.
+- **Traçabilité** : seuls `reference_number` et `document_date` sont extraits ;
+  les spans sont au niveau ligne ; la dernière correction fait foi (pas de
+  validation à quatre yeux ni de suppression) ; aucun LLM ni `pgvector`.
 
 ### Structure
 
@@ -436,6 +457,7 @@ src/main/java/dz/DocuScan/document/
   dto/          réponses API
   exception/    ProblemDetail
   extractor/    PDFBox, Tesseract, prétraitement
+  field/        règles déterministes et normalisation
   model/        utilisateur, rôle, job, statut
   repository/   JDBC, documents, jobs, audit, utilisateurs
   security/     JWT, filtre, Spring Security
@@ -682,6 +704,24 @@ No LLM and no `pgvector` are used in this version. A future AI extractor must
 implement `FieldRule` and return a verifiable source; a value without a span
 remains `UNVERIFIED`.
 
+#### Field traceability — implementation status
+
+| Component | Status | Detail |
+| --- | --- | --- |
+| Schema | ✅ | `V3__field_traceability.sql`: lineage, fields, sources and corrections |
+| Rules | ✅ | `FieldRule`, `ReferenceNumberRule`, `DocumentDateRule` |
+| Spans | ✅ | Line-level, normalized `[x0,y0,x1,y1]` bbox, page dimensions and rotation |
+| Normalization | ✅ | NFC + Arabic-Indic/Persian digit folding for comparison only |
+| API | ✅ | `GET /fields`, `POST /fields/{fieldKey}/corrections` |
+| Exports | ✅ | Shared `ExtractionExportService`, additive JSON |
+| Security | ✅ | `organization_id` filtering, access checks, `FIELD_CORRECTED` audit |
+| Tests | ✅ | Unit tests + lineage, correction and export integration |
+
+Decisions are documented in
+[`../docs/adr/0001-field-traceability.md`](../docs/adr/0001-field-traceability.md)
+and the complete status in
+[`../docs/implementation-status.md`](../docs/implementation-status.md).
+
 ### Configuration
 
 All values can be overridden by environment variables; see `.env.example`.
@@ -784,6 +824,9 @@ The full checklist is in [SECURITY.md](SECURITY.md). Minimum:
   approved customer corpus.
 - Official MinIO images are no longer published; verify and pin the default mirror,
   or use a managed S3-compatible storage service.
+- **Traceability**: only `reference_number` and `document_date` are extracted;
+  spans are line-level; the latest correction wins (no four-eyes approval or
+  deletion); no LLM or `pgvector`.
 
 ### Structure
 
@@ -794,6 +837,7 @@ src/main/java/dz/DocuScan/document/
   dto/          API responses
   exception/    ProblemDetail
   extractor/    PDFBox, Tesseract, preprocessing
+  field/        deterministic rules and normalization
   model/        user, role, job, status
   repository/   JDBC, documents, jobs, audit, users
   security/     JWT, filter, Spring Security
