@@ -30,7 +30,7 @@ import { useDocumentFile } from '@/features/extraction/hooks/useDocumentFile';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { createExtractions, deleteExtraction } from '@/api/extractionService';
 import { normalizeError } from '@/api/errors';
-import type { ApiError, OcrLanguage } from '@/api/types';
+import type { ApiError, ExtractedField, FieldSource, OcrLanguage } from '@/api/types';
 import { loadLanguages, saveLanguages } from '@/utils/languageStorage';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +46,10 @@ export function ExtractionPage() {
   const [languages, setLanguages] = useState<OcrLanguage[]>(() => loadLanguages());
   const [phase, setPhase] = useState<Phase>('idle');
   const [apiError, setApiError] = useState<ApiError | null>(null);
+  const [highlight, setHighlight] = useState<{
+    field: ExtractedField;
+    source: FieldSource;
+  } | null>(null);
   const activeId = params.id ?? null;
   const filesRef = useRef<File[]>([]);
   const lastUploadedIdRef = useRef<string | null>(null);
@@ -85,6 +89,8 @@ export function ExtractionPage() {
   // from history, no local File object is available, so show the preview
   // placeholder instead of the previous document.
   useEffect(() => {
+    setHighlight(null);
+
     if (!params.id) {
       lastUploadedIdRef.current = null;
       setFile(null);
@@ -179,6 +185,7 @@ export function ExtractionPage() {
 
   function reset() {
     lastUploadedIdRef.current = null;
+    setHighlight(null);
     setFile(null);
     setFiles([]);
     filesRef.current = [];
@@ -377,7 +384,24 @@ export function ExtractionPage() {
             >
               <ResizablePanel defaultSize={45} minSize={30} className="min-h-0">
                 {previewFile ? (
-                  <DocumentPreview file={previewFile} />
+                  <DocumentPreview
+                    file={previewFile}
+                    highlights={
+                      highlight
+                        ? [
+                            {
+                              id: `${highlight.field.id}:${highlight.source.id}`,
+                              pageNumber: highlight.source.pageNumber,
+                              bboxX0: highlight.source.bboxX0,
+                              bboxY0: highlight.source.bboxY0,
+                              bboxX1: highlight.source.bboxX1,
+                              bboxY1: highlight.source.bboxY1,
+                              label: highlight.field.label,
+                            },
+                          ]
+                        : []
+                    }
+                  />
                 ) : serverFile.isLoading ? (
                   <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -391,7 +415,14 @@ export function ExtractionPage() {
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
-                <ResultTextPanel extraction={statusQuery.data} onNewExtraction={reset} />
+                <ResultTextPanel
+                  extraction={statusQuery.data}
+                  onNewExtraction={reset}
+                  selectedFieldKey={highlight?.field.fieldKey ?? null}
+                  onSourceSelect={(field, source) =>
+                    setHighlight(source ? { field, source } : null)
+                  }
+                />
               </ResizablePanel>
             </ResizablePanelGroup>
           )}

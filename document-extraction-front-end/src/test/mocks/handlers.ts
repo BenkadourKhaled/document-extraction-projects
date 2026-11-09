@@ -1,5 +1,11 @@
 import { http, HttpResponse } from 'msw';
-import type { DocumentSummary, ExtractionStatus, ManagedUser } from '@/api/types';
+import type {
+  DocumentSummary,
+  ExtractedField,
+  ExtractionStatus,
+  FieldCorrection,
+  ManagedUser,
+} from '@/api/types';
 
 const API = import.meta.env.VITE_API_URL ?? '/api/v1';
 
@@ -54,6 +60,7 @@ interface StoredExtraction {
 }
 
 let extractionStore: Record<string, StoredExtraction> = {};
+let fieldStore: Record<string, ExtractedField[]> = {};
 
 function toSummary(entry: StoredExtraction): DocumentSummary {
   return {
@@ -272,6 +279,94 @@ export const handlers = [
     });
   }),
 
+  http.get(`${API}/extractions/:id/fields`, ({ params }) => {
+    const id = params.id as string;
+    return HttpResponse.json(fieldStore[id] ?? []);
+  }),
+
+  http.post(`${API}/extractions/:id/fields/:fieldKey/corrections`, async ({ params, request }) => {
+    const id = params.id as string;
+    const fieldKey = params.fieldKey as string;
+    const fields = fieldStore[id] ?? [];
+    const field = fields.find((candidate) => candidate.fieldKey === fieldKey);
+    if (!field) {
+      return HttpResponse.json(
+        { title: 'Not found', detail: 'Champ introuvable.', status: 404 },
+        { status: 404 },
+      );
+    }
+
+    const body = (await request.json()) as { value?: string; reason?: string };
+    const value = body.value?.trim();
+    if (!value) {
+      return HttpResponse.json(
+        {
+          title: 'Bad Request',
+          detail: 'La valeur corrigée est obligatoire.',
+          status: 400,
+        },
+        { status: 400 },
+      );
+    }
+
+    const createdAt = new Date().toISOString();
+    const previous = field.corrections.find((correction) => correction.active);
+    const correction: FieldCorrection = {
+      id: `corr-${Date.now()}-${field.corrections.length}`,
+      correctedValue: value,
+      previousValue: previous?.correctedValue ?? field.rawValue,
+      reason: body.reason ?? null,
+      actorDisplayName: 'Test Admin',
+      createdAt,
+      supersededAt: null,
+      active: true,
+    };
+    const updated: ExtractedField = {
+      ...field,
+      effectiveValue: value,
+      corrected: true,
+      corrections: [
+        ...field.corrections.map((candidate) =>
+          candidate.active
+            ? { ...candidate, active: false, supersededAt: createdAt }
+            : candidate,
+        ),
+        correction,
+      ],
+    };
+    fieldStore[id] = fields.map((candidate) =>
+      candidate.fieldKey === fieldKey ? updated : candidate,
+    );
+    return HttpResponse.json(updated);
+  }),
+
+  http.get(`${API}/extractions/:id/download`, ({ params, request }) => {
+    const id = params.id as string;
+    const entry = extractionStore[id];
+    if (!entry) {
+      return HttpResponse.json(
+        { title: 'Not found', detail: `Extraction ${id} not found`, status: 404 },
+        { status: 404 },
+      );
+    }
+    const url = new URL(request.url);
+    const format = url.searchParams.get('format') ?? 'txt';
+    const fields = fieldStore[id] ?? [];
+    if (format === 'json') {
+      return HttpResponse.json({
+        ...entry,
+        schema_version: 'field-traceability-v1',
+        fields,
+      });
+    }
+    const fieldLines = fields.map(
+      (field) => `${field.label} (${field.fieldKey}): ${field.effectiveValue}`,
+    );
+    return HttpResponse.text(`${entry.fullText}\n\n${fieldLines.join('\n')}`, {
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+  }),
+
   http.delete(`${API}/extractions/:id`, ({ params }) => {
     const id = params.id as string;
     delete extractionStore[id];
@@ -311,6 +406,7 @@ export const handlers = [
 
 export function resetStore() {
   extractionStore = {};
+  fieldStore = {};
   userStore = seedUsers();
 }
 
@@ -351,4 +447,8 @@ export function seedFailed(id: string, status: ExtractionStatus, error: string) 
     languages: 'fra',
     sizeBytes: 12,
   };
+}
+
+export function seedFields(id: string, fields: ExtractedField[]) {
+  fieldStore[id] = fields;
 }

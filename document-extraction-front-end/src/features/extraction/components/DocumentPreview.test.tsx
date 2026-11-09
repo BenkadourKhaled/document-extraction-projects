@@ -30,4 +30,37 @@ describe('DocumentPreview', () => {
     expect(link).toHaveAttribute('download', 'scan.tif');
     expect(link).toHaveAttribute('href', 'blob:test');
   });
+
+  it('draws normalized field highlights over the current page', async () => {
+    await i18n.changeLanguage('fr');
+    const file = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'doc.pdf', {
+      type: 'application/pdf',
+    });
+
+    render(
+      <DocumentPreview
+        file={file}
+        highlights={[
+          {
+            id: 'highlight-1',
+            pageNumber: 1,
+            bboxX0: 0.125,
+            bboxY0: 0.25,
+            bboxX1: 0.5,
+            bboxY1: 0.375,
+            label: 'Facture',
+          },
+        ]}
+      />,
+    );
+
+    const highlight = await screen.findByTestId('field-highlight');
+    expect(highlight).toHaveAttribute('title', 'Facture');
+    expect(highlight).toHaveStyle({
+      left: '12.5%',
+      top: '25%',
+      width: '37.5%',
+      height: '12.5%',
+    });
+  });
 });

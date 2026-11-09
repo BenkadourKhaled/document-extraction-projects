@@ -1,25 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Copy, Check, FileJson, FileText, Search, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  Copy,
+  Check,
+  FileJson,
+  FileText,
+  Loader2,
+  Search,
+  Plus,
+  ShieldCheck,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FieldPanel } from '@/features/extraction/components/FieldPanel';
 import { cn } from '@/lib/utils';
-import type { Extraction, ExtractionMethod } from '@/api/types';
+import type {
+  ExtractedField,
+  Extraction,
+  ExtractionMethod,
+  FieldSource,
+} from '@/api/types';
+import { normalizeError } from '@/api/errors';
 import { useCopyToClipboard } from '@/utils/useCopyToClipboard';
-import { downloadTxt, downloadJson } from '@/utils/download';
+import { downloadServerExtraction } from '@/utils/download';
 import { findMatches, buildSegments } from '@/utils/search';
 
 interface ResultTextPanelProps {
   extraction: Extraction;
   onNewExtraction: () => void;
+  selectedFieldKey?: string | null;
+  onSourceSelect?: (field: ExtractedField, source: FieldSource | null) => void;
 }
 
-export function ResultTextPanel({ extraction, onNewExtraction }: ResultTextPanelProps) {
+export function ResultTextPanel({
+  extraction,
+  onNewExtraction,
+  selectedFieldKey,
+  onSourceSelect,
+}: ResultTextPanelProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
+  const [downloading, setDownloading] = useState<'txt' | 'json' | null>(null);
   const [fullText, setFullText] = useState(extraction.fullText);
   const [pageTexts, setPageTexts] = useState<Record<number, string>>(
     Object.fromEntries(extraction.pages.map((p) => [p.number, p.text])),
@@ -37,6 +62,19 @@ export function ResultTextPanel({ extraction, onNewExtraction }: ResultTextPanel
 
   function handleCopy() {
     void copy(fullText);
+  }
+
+  async function handleDownload(format: 'txt' | 'json') {
+    setDownloading(format);
+    try {
+      // The server export is authoritative: it contains the effective field
+      // values (including corrections), unlike a locally rebuilt payload.
+      await downloadServerExtraction(extraction.id, extraction.fileName, format);
+    } catch (error) {
+      toast.error(normalizeError(error).detail);
+    } finally {
+      setDownloading(null);
+    }
   }
 
   function updatePageText(number: number, text: string) {
@@ -68,12 +106,30 @@ export function ResultTextPanel({ extraction, onNewExtraction }: ResultTextPanel
             {copied.copied ? <Check className="h-3.5 w-3.5 me-1.5 text-success" /> : <Copy className="h-3.5 w-3.5 me-1.5" />}
             {copied.copied ? t('result.copied') : t('result.copy')}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => downloadTxt({ ...extraction, fullText })}>
-            <FileText className="h-3.5 w-3.5 me-1.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleDownload('txt')}
+            disabled={downloading !== null}
+          >
+            {downloading === 'txt' ? (
+              <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
+            ) : (
+              <FileText className="h-3.5 w-3.5 me-1.5" />
+            )}
             .txt
           </Button>
-          <Button variant="outline" size="sm" onClick={() => downloadJson({ ...extraction, fullText, pages: extraction.pages.map((p) => ({ ...p, text: pageTexts[p.number] ?? p.text })) })}>
-            <FileJson className="h-3.5 w-3.5 me-1.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleDownload('json')}
+            disabled={downloading !== null}
+          >
+            {downloading === 'json' ? (
+              <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
+            ) : (
+              <FileJson className="h-3.5 w-3.5 me-1.5" />
+            )}
             .json
           </Button>
           <Button size="sm" onClick={onNewExtraction}>
@@ -106,6 +162,10 @@ export function ResultTextPanel({ extraction, onNewExtraction }: ResultTextPanel
         <TabsList>
           <TabsTrigger value="full">{t('result.fullText')}</TabsTrigger>
           <TabsTrigger value="pages">{t('result.byPage')}</TabsTrigger>
+          <TabsTrigger value="fields" className="gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('fields.tab')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="full" className="mt-2 min-h-0 flex-1">
@@ -146,6 +206,14 @@ export function ResultTextPanel({ extraction, onNewExtraction }: ResultTextPanel
               />
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="fields" className="mt-2 min-h-0 flex-1">
+          <FieldPanel
+            extractionId={extraction.id}
+            selectedFieldKey={selectedFieldKey}
+            onSourceSelect={onSourceSelect ?? (() => undefined)}
+          />
         </TabsContent>
       </Tabs>
     </div>

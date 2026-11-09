@@ -63,6 +63,20 @@ test('login, upload, poll and reopen an extraction from history', async ({ page 
   await expect(page.getByRole('button', { name: /Nouvelle extraction/ })).toBeVisible();
   await expect(page.locator('canvas').first()).toBeVisible({ timeout: 30_000 });
 
+  await page.getByRole('tab', { name: 'Champs' }).click();
+  const fieldRow = page.getByTestId('field-reference_number');
+  await expect(fieldRow).toBeVisible();
+  await expect(fieldRow).toContainText('2026-001');
+
+  await fieldRow.getByRole('button', { name: 'Page 1' }).click();
+  await expect(page.getByTestId('field-highlight')).toBeVisible();
+
+  await fieldRow.getByRole('button', { name: 'Corriger' }).click();
+  await page.getByLabel('Valeur corrigée').fill('FACT-2026-777');
+  await page.getByRole('button', { name: 'Enregistrer la correction' }).click();
+  await expect(page.getByText('Correction enregistrée.')).toBeVisible();
+  await expect(page.getByTestId('field-reference_number')).toContainText('FACT-2026-777');
+
   await page.goto('/');
   const search = page.getByPlaceholder(/Rechercher un document/);
   await search.fill(fileName);
@@ -73,6 +87,10 @@ test('login, upload, poll and reopen an extraction from history', async ({ page 
   await historyEntry.click();
   await expect(page).toHaveURL(/\/extraction\/[0-9a-f-]+/);
   await expect(page.getByLabel('Texte éditable')).toHaveValue(/Facture numero 2026-001/);
+
+  // Corrections are persisted server-side and survive a reload of the document.
+  await page.getByRole('tab', { name: 'Champs' }).click();
+  await expect(page.getByTestId('field-reference_number')).toContainText('FACT-2026-777');
 });
 
 test('administrator creates a user and resets their password', async ({ page }) => {
