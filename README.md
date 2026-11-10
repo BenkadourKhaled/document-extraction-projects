@@ -153,9 +153,10 @@ Flux d'un document :
 
 1. l'utilisateur dépose un fichier et choisit les langues OCR ;
 2. l'API valide le fichier, le stocke et crée un job `PENDING` ;
-3. le worker passe le job en `PROCESSING`, exécute PDFBox/Tesseract et enregistre
-   le texte et les pages ;
-4. le frontend interroge le statut jusqu'à `COMPLETED` ou `FAILED` ;
+3. le worker passe le job en `PROCESSING`, exécute PDFBox/Tesseract, extrait les
+   champs (règles puis Ollama si activé) et enregistre le résultat terminé ;
+4. le frontend interroge le statut jusqu'à `COMPLETED` ou `FAILED` ; à
+   `COMPLETED`, les champs sont déjà persistés et disponibles ;
 5. le résultat peut être consulté, recherché, copié ou téléchargé.
 
 ### Structure du dépôt
@@ -768,9 +769,10 @@ Document flow:
 
 1. the user uploads a file and selects OCR languages;
 2. the API validates the file, stores it and creates a `PENDING` job;
-3. the worker moves the job to `PROCESSING`, runs PDFBox/Tesseract and stores the
-   text and pages;
-4. the frontend polls until `COMPLETED` or `FAILED`;
+3. the worker moves the job to `PROCESSING`, runs PDFBox/Tesseract, extracts the
+   fields (rules, then Ollama when enabled) and stores the completed result;
+4. the frontend polls until `COMPLETED` or `FAILED`; when `COMPLETED` is
+   observed, fields are already persisted and available;
 5. the result can be reviewed, searched, copied or downloaded.
 
 ### Repository layout

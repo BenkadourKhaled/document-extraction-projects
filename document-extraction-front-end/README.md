@@ -255,8 +255,10 @@ erreurs sont normalisées dans un objet `ApiError` unique :
 - fichier trop volumineux ;
 - session expirée.
 
-Le polling s'arrête dès qu'un statut terminal est reçu. La suppression d'une
-extraction en cours appelle `DELETE`, puis réinitialise l'écran.
+Le polling s'arrête dès qu'un statut terminal est reçu. L'API ne persiste
+`COMPLETED` qu'après l'extraction des champs : l'onglet **Champs** est donc prêt
+dès l'affichage du résultat. La suppression d'une extraction en cours appelle
+`DELETE`, puis réinitialise l'écran.
 
 ### Tests et qualité
 
@@ -585,8 +587,9 @@ are normalized into one `ApiError` shape:
 - file too large;
 - expired session.
 
-Polling stops on a terminal status. Deleting a running extraction calls
-`DELETE`, then resets the screen.
+Polling stops on a terminal status. The API persists `COMPLETED` only after field
+extraction, so the **Fields** tab is ready as soon as the result is shown.
+Deleting a running extraction calls `DELETE`, then resets the screen.
 
 ### Tests and quality
 

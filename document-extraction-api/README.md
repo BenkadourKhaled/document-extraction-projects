@@ -160,6 +160,8 @@ flowchart LR
     E --> F[Worker OCR]
     F --> G[PDFBox / Tesseract]
     G --> C
+    F -.-> I[Ollama optionnel]
+    I -.-> C
     B --> H[Journal d'audit]
     H --> C
 ```
@@ -177,6 +179,7 @@ proxyfier `/api/v1/` vers cette API.
 | Base | PostgreSQL 16 (prod), H2 fichier (local), Flyway |
 | Stockage | Disque local ou MinIO / S3 |
 | OCR | Tesseract 5, Tess4J, Leptonica |
+| Extraction IA (option) | Ollama `llama3.2:1b`, client HTTP JDK |
 | PDF | Apache PDFBox 3 |
 | Détection MIME | Apache Tika 3 |
 | File de jobs | Table `jobs` PostgreSQL, verrouillage transactionnel |

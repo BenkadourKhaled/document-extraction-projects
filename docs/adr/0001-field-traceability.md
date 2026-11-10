@@ -1,8 +1,8 @@
 # ADR 0001 — Field traceability and review workflow
 
-- Status: accepted
+- Status: accepted, amended by ADR 0002 for optional local AI extraction
 - Date: 2026-11-08
-- Scope: `DocuScan-AI` branch, first deterministic traceability slice
+- Scope: `DocuScan-AI` branch, deterministic-first traceability slice
 
 ## Context
 
@@ -13,12 +13,13 @@ is no durable field, source, correction or audit trail.
 
 The next iteration must make every structured value traceable to a page and a
 source region, without changing the existing extraction architecture, without
-adding an LLM, and without breaking the H2 test profile or existing TXT/JSON
-clients.
+adding an LLM in this first slice, and without breaking the H2 test profile or
+existing TXT/JSON clients. ADR 0002 later adds an opt-in local Ollama extractor
+on top of this deterministic foundation.
 
 ## Decisions
 
-### 1. Scope: deterministic extraction only
+### 1. Scope: deterministic extraction first
 
 The first vertical slice extracts two fields with rules:
 

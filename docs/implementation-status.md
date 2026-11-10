@@ -45,7 +45,7 @@ est ignorée ou marquée `UNVERIFIED`. Aucune géométrie n'est inventée.
 
 | # | Exigence | État | Preuve |
 | --- | --- | --- | --- |
-| 1 | Travailler sur la branche existante `DocuScan-AI` | ✅ | Branche unique, commits `051018c`, `383dd10`, `68c0765`, `fa00f41`, `b8cb446` |
+| 1 | Travailler sur la branche existante `DocuScan-AI` | ✅ | Branche unique, historique dédié (dont le commit Ollama `ce06006`) |
 | 2 | IA générative locale optionnelle, sans cloud ni `pgvector` | ✅ | Ollama `llama3.2:1b` désactivé par défaut ; aucun appel cloud, embedding ou dépendance vectorielle |
 | 3 | Migrations Flyway additives | ✅ | `V3__field_traceability.sql` : colonnes et tables ajoutées, aucune colonne réécrite |
 | 4 | Compatibilité TXT/JSON existante | ✅ | JSON additif (`schema_version`, `fields`) ; TXT conserve le texte puis ajoute la section des champs |
@@ -78,7 +78,7 @@ est ignorée ou marquée `UNVERIFIED`. Aucune géométrie n'est inventée.
 | `npm run typecheck:e2e` | OK |
 | `npm run lint` | 0 erreur, 6 avertissements `react-refresh` préexistants |
 | `npm run build` | OK (avertissements de taille de bundle uniquement) |
-| `npm run test:e2e` | **3/3** sur stack locale H2 + Vite |
+| `npm run test:e2e` | **3/3** le 2026-11-10 sur stack locale H2 + Vite, après le correctif `COMPLETED`/champs |
 | OpenAPI `/v3/api-docs` | `/fields`, `/corrections`, `/download`, `/documents/zip` exposés |
 
 Le job CI Docker (PostgreSQL + MinIO + OCR + E2E) n'a pas pu être exécuté sur

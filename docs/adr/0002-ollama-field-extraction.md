@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-11-09
+- Updated: 2026-11-10 — field extraction runs before `COMPLETED` is persisted
 - Scope: `DocuScan-AI` branch, complementary AI extraction for traceable fields
 
 ## Context
