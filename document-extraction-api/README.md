@@ -206,6 +206,31 @@ $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 mvn.cmd spring-boot:run
 ```
 
+#### Variante PostgreSQL local
+
+Pour utiliser PostgreSQL au lieu de H2, créez une fois le rôle et la base avec un
+superutilisateur PostgreSQL. Le mot de passe doit correspondre à
+`POSTGRES_PASSWORD` dans `.env` :
+
+```sql
+CREATE ROLE document LOGIN PASSWORD '<mot de passe>';
+CREATE DATABASE document_extraction OWNER document;
+```
+
+Sous Windows, le script charge `.env`, active le profil `postgres`, utilise le
+stockage disque local et applique les migrations Flyway au démarrage :
+
+```powershell
+.\scripts\run-local-postgres.ps1            # API sur http://localhost:18080
+.\scripts\run-local-postgres.ps1 -Ollama    # active l'extraction Ollama
+.\scripts\run-local-postgres.ps1 -Port 8080 # autre port
+```
+
+Le script exige un jar déjà construit (`target/document-extraction-api-*.jar`).
+Utilisez `-Rebuild` si `mvn.cmd` est dans le `PATH`, ou construisez le jar depuis
+l'IDE. Les tests automatisés restent sur H2 ; le parcours API ci-dessus valide le
+schéma et les requêtes PostgreSQL réels.
+
 Au premier démarrage, un administrateur et une organisation sont créés si la base
 est vide :
 
@@ -220,10 +245,11 @@ est vide :
 
 Services locaux :
 
-- API : `http://localhost:8080`
+- API : `http://localhost:8080` (`18080` avec `run-local-postgres.ps1`)
 - Swagger UI : `http://localhost:8080/swagger-ui.html`
 - Santé : `http://localhost:8080/actuator/health`
-- Données locales : `./data/db` et `./data/storage`
+- Données : `./data/db` (H2), `./data/storage`, ou la base PostgreSQL
+  `document_extraction`
 
 ### Démarrage Docker — PostgreSQL + MinIO
 
@@ -719,6 +745,30 @@ $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 mvn.cmd spring-boot:run
 ```
 
+#### Local PostgreSQL variant
+
+To use PostgreSQL instead of H2, create the role and database once as a
+PostgreSQL superuser. The password must match `POSTGRES_PASSWORD` in `.env`:
+
+```sql
+CREATE ROLE document LOGIN PASSWORD '<password>';
+CREATE DATABASE document_extraction OWNER document;
+```
+
+On Windows, the script loads `.env`, enables the `postgres` profile, uses local
+disk storage and applies Flyway migrations at startup:
+
+```powershell
+.\scripts\run-local-postgres.ps1            # API on http://localhost:18080
+.\scripts\run-local-postgres.ps1 -Ollama    # enable Ollama extraction
+.\scripts\run-local-postgres.ps1 -Port 8080 # another port
+```
+
+The script expects an existing jar (`target/document-extraction-api-*.jar`). Use
+`-Rebuild` when `mvn.cmd` is on `PATH`, or build the jar from your IDE. Automated
+tests still run on H2; the API flow above exercises the real PostgreSQL schema
+and queries.
+
 On first start, an administrator and organization are created if the database is
 empty:
 
@@ -733,10 +783,11 @@ empty:
 
 Local services:
 
-- API: `http://localhost:8080`
+- API: `http://localhost:8080` (`18080` with `run-local-postgres.ps1`)
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Health: `http://localhost:8080/actuator/health`
-- Local data: `./data/db` and `./data/storage`
+- Data: `./data/db` (H2), `./data/storage`, or the PostgreSQL
+  `document_extraction` database
 
 ### Docker — PostgreSQL + MinIO
 

@@ -312,13 +312,37 @@ mvn.cmd spring-boot:run
 
 Par défaut, le profil local utilise **H2 fichier** et le **stockage disque** :
 
-- API : `http://localhost:8080`
+- API : `http://localhost:8080` (`18080` avec le script PostgreSQL)
 - Swagger UI : `http://localhost:8080/swagger-ui.html`
 - Santé : `http://localhost:8080/actuator/health`
-- Données : `./data/db` et `./data/storage`
+- Données : `./data/db` et `./data/storage` (H2), ou la base PostgreSQL
+  `document_extraction`
 
 Compte bootstrap par défaut : `admin@local.test` / `ChangeMe123!`. Changez-le
 immédiatement via `BOOTSTRAP_ADMIN_EMAIL` et `BOOTSTRAP_ADMIN_PASSWORD`.
+
+#### Variante PostgreSQL local
+
+Pour utiliser PostgreSQL au lieu de H2, créez une fois le rôle et la base avec un
+superutilisateur PostgreSQL. Le mot de passe doit correspondre à
+`POSTGRES_PASSWORD` dans `document-extraction-api/.env` :
+
+```sql
+CREATE ROLE document LOGIN PASSWORD '<mot de passe>';
+CREATE DATABASE document_extraction OWNER document;
+```
+
+Sous Windows, le script charge `.env`, active le profil `postgres`, utilise le
+stockage disque local et applique Flyway :
+
+```powershell
+cd document-extraction-api
+.\scripts\run-local-postgres.ps1            # API sur http://localhost:18080
+.\scripts\run-local-postgres.ps1 -Ollama    # active Ollama
+```
+
+Les tests automatisés restent sur H2 ; ce parcours valide le schéma et les
+requêtes PostgreSQL réels.
 
 #### Extraction IA locale optionnelle (Ollama)
 
@@ -927,13 +951,37 @@ mvn.cmd spring-boot:run
 
 The local profile uses **file-based H2** and **disk storage** by default:
 
-- API: `http://localhost:8080`
+- API: `http://localhost:8080` (`18080` with the PostgreSQL script)
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Health: `http://localhost:8080/actuator/health`
-- Data: `./data/db` and `./data/storage`
+- Data: `./data/db` and `./data/storage` (H2), or the PostgreSQL
+  `document_extraction` database
 
 Default bootstrap account: `admin@local.test` / `ChangeMe123!`. Change it
 immediately with `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`.
+
+#### Local PostgreSQL variant
+
+To use PostgreSQL instead of H2, create the role and database once as a
+PostgreSQL superuser. The password must match `POSTGRES_PASSWORD` in
+`document-extraction-api/.env`:
+
+```sql
+CREATE ROLE document LOGIN PASSWORD '<password>';
+CREATE DATABASE document_extraction OWNER document;
+```
+
+On Windows, the script loads `.env`, enables the `postgres` profile, uses local
+disk storage and applies Flyway:
+
+```powershell
+cd document-extraction-api
+.\scripts\run-local-postgres.ps1            # API on http://localhost:18080
+.\scripts\run-local-postgres.ps1 -Ollama    # enable Ollama
+```
+
+Automated tests still run on H2; this flow exercises the real PostgreSQL schema
+and queries.
 
 #### Optional local AI extraction (Ollama)
 

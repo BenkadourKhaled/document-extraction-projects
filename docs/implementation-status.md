@@ -72,6 +72,7 @@ est ignorée ou marquée `UNVERIFIED`. Aucune géométrie n'est inventée.
 | `mvn -B verify` (API) | **90 tests**, 0 échec, 1 ignoré (live Ollama), `BUILD SUCCESS` |
 | `mvn -Dtest=OllamaLiveTest test` avec `OLLAMA_LIVE_TEST=true` | **1/1**, modèle `llama3.2:1b`, 36,76 s |
 | E2E API réel avec `OLLAMA_ENABLED=true` | `COMPLETED` après 14 s, **2 champs** (1 `RULE`, 1 `OLLAMA`), source vérifiée pour chacun |
+| PostgreSQL local 18.6, profil `postgres`, rôle `document` | API `UP`, Flyway V1–V3, 2 champs et 1 correction relus dans `extracted_fields` / `field_corrections` |
 | `npm test` (frontend) | **44 tests**, 13 fichiers |
 | `npm run test:coverage` | **44 tests**, 60 % instructions, 73,62 % branches |
 | `npm run typecheck` | OK |
@@ -81,9 +82,8 @@ est ignorée ou marquée `UNVERIFIED`. Aucune géométrie n'est inventée.
 | `npm run test:e2e` | **3/3** le 2026-11-10 sur stack locale H2 + Vite, après le correctif `COMPLETED`/champs |
 | OpenAPI `/v3/api-docs` | `/fields`, `/corrections`, `/download`, `/documents/zip` exposés |
 
-Le job CI Docker (PostgreSQL + MinIO + OCR + E2E) n'a pas pu être exécuté sur
-le poste local car la CLI Docker n'était pas disponible. Il constitue la
-validation restante avant fusion.
+Le job CI Docker (PostgreSQL + MinIO + OCR + E2E) n'a pas été exécuté dans cet
+environnement. Il constitue la validation restante avant fusion.
 
 ## Ce qui reste
 
