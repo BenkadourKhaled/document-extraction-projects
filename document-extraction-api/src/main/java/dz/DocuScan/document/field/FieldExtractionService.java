@@ -6,11 +6,14 @@ import dz.DocuScan.document.model.ExtractionJob;
 import dz.DocuScan.document.model.VerificationStatus;
 import dz.DocuScan.document.repository.FieldRepository;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Runs the deterministic field rules over the persisted page text and stores
@@ -20,21 +23,40 @@ import org.springframework.transaction.annotation.Transactional;
  * label on the same line as the value. A detected value without a line-level
  * source span is stored as {@link VerificationStatus#UNVERIFIED}; no geometry is
  * invented and no field is created from a bare number.</p>
+ *
+ * <p>When local Ollama extraction is enabled, it only fills keys that the
+ * deterministic rules did not produce. Ollama failures never discard the
+ * deterministic result, and the AI output is subject to the same source-span
+ * validation.</p>
  */
 @Service
 public class FieldExtractionService {
 
     static final String EXTRACTION_METHOD = "RULE";
 
+    private static final Logger log = LoggerFactory.getLogger(FieldExtractionService.class);
+
     private final FieldRepository fields;
     private final List<FieldRule> rules;
+    private final OllamaFieldExtractor aiExtractor;
 
+    /** Test-friendly constructor: deterministic rules only. */
     public FieldExtractionService(FieldRepository fields) {
-        this.fields = fields;
-        this.rules = List.of(new ReferenceNumberRule(), new DocumentDateRule());
+        this(fields, null);
     }
 
-    @Transactional
+    @Autowired
+    public FieldExtractionService(
+            FieldRepository fields,
+            OllamaFieldExtractor aiExtractor) {
+        this.fields = fields;
+        this.rules = List.of(new ReferenceNumberRule(), new DocumentDateRule());
+        this.aiExtractor = aiExtractor;
+        if (aiExtractor != null && aiExtractor.enabled()) {
+            log.info("Optional Ollama field extraction is wired (missing keys only).");
+        }
+    }
+
     public void extractAndStore(ExtractionJob job) {
         if (job == null || job.getOrganizationId() == null
                 || job.getPages() == null || job.getPages().isEmpty()) {
@@ -48,7 +70,7 @@ public class FieldExtractionService {
         for (FieldRule rule : rules) {
             List<Candidate> candidates = new ArrayList<>();
             for (PageResult page : job.getPages()) {
-                for (Line line : lines(page.text())) {
+                for (TextLines.Line line : TextLines.of(page.text())) {
                     for (FieldMatch match : rule.matches(line.text())) {
                         candidates.add(candidate(job, page, line, match));
                     }
@@ -63,6 +85,26 @@ public class FieldExtractionService {
             }
         }
 
+        Set<String> keys = drafts.stream()
+                .map(FieldDraft::fieldKey)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        log.debug("Field extraction for document {}: pages={}, deterministicKeys={}.",
+                job.getId(), job.getPages().size(), keys);
+        if (aiExtractor != null) {
+            try {
+                for (FieldDraft draft : aiExtractor.extract(job, Set.copyOf(keys))) {
+                    if (draft != null && keys.add(draft.fieldKey())) {
+                        drafts.add(draft);
+                    }
+                }
+            } catch (RuntimeException ex) {
+                // Deterministic fields remain valid when the optional local
+                // model is unavailable; only the exception class is logged.
+                log.warn("AI field extraction failed for document {}: {}",
+                        job.getId(), ex.getClass().getSimpleName());
+            }
+        }
+
         if (!drafts.isEmpty()) {
             fields.insertAll(job, drafts);
         }
@@ -71,7 +113,7 @@ public class FieldExtractionService {
     private Candidate candidate(
             ExtractionJob job,
             PageResult page,
-            Line line,
+            TextLines.Line line,
             FieldMatch match) {
         int pageStart = line.start() + match.matchStart();
         int pageEnd = line.start() + match.matchEnd();
@@ -138,35 +180,6 @@ public class FieldExtractionService {
                                 .filter(span -> span.text().contains(rawValue))
                                 .findFirst()
                                 .orElse(null)));
-    }
-
-    static List<Line> lines(String text) {
-        List<Line> lines = new ArrayList<>();
-        if (text == null || text.isEmpty()) return lines;
-
-        int start = 0;
-        while (start <= text.length()) {
-            int newline = text.indexOf('\n', start);
-            int end = newline < 0 ? text.length() : newline;
-            String value = text.substring(start, end);
-            int cleanStart = start;
-            int cleanEnd = end;
-            while (cleanStart < cleanEnd && (text.charAt(cleanStart) == '\r'
-                    || Character.isWhitespace(text.charAt(cleanStart)))) {
-                cleanStart++;
-            }
-            while (cleanEnd > cleanStart && (text.charAt(cleanEnd - 1) == '\r'
-                    || Character.isWhitespace(text.charAt(cleanEnd - 1)))) {
-                cleanEnd--;
-            }
-            lines.add(new Line(cleanStart, cleanEnd, text.substring(cleanStart, cleanEnd)));
-            if (newline < 0) break;
-            start = newline + 1;
-        }
-        return lines;
-    }
-
-    record Line(int start, int end, String text) {
     }
 
     private record Candidate(FieldDraft draft) {

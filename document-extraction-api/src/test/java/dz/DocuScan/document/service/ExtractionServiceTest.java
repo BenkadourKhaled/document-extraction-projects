@@ -17,7 +17,9 @@ import dz.DocuScan.document.repository.DocumentRepository;
 import dz.DocuScan.document.repository.JobRepository;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -131,6 +133,47 @@ class ExtractionServiceTest {
 
         assertEquals(ExtractionStatus.COMPLETED, job.getStatus());
         assertTrue(store.findById(job.getId()).isPresent());
+    }
+
+    @Test
+    void processJobRunsPostCompletionWorkBeforeSavingTheCompletedSnapshot() throws Exception {
+        AtomicBoolean hookRan = new AtomicBoolean(false);
+        AtomicBoolean completedSavedAfterHook = new AtomicBoolean(false);
+        ExtractionResultStore recordingStore = new ExtractionResultStore() {
+            private final ExtractionResultStore delegate = new CaffeineExtractionResultStore(PROPS);
+
+            @Override
+            public void save(ExtractionJob job) {
+                if (job.getStatus() == ExtractionStatus.COMPLETED) {
+                    completedSavedAfterHook.set(hookRan.get());
+                }
+                delegate.save(job);
+            }
+
+            @Override
+            public Optional<ExtractionJob> findById(UUID id) {
+                return delegate.findById(id);
+            }
+
+            @Override
+            public boolean delete(UUID id) {
+                return delegate.delete(id);
+            }
+        };
+        ExtractionService recordingService = newService(PROPS, recordingStore);
+        byte[] pdf = PdfTextExtractorTest.pdfWithText("completed document");
+        ExtractionJob job = recordingService.create("doc.pdf", pdf, "fra+eng", ACTOR, null, null);
+
+        recordingService.processJob(job, pdf, "fra+eng", completed -> {
+            assertEquals(ExtractionStatus.COMPLETED, completed.getStatus());
+            assertFalse(completed.getPages().isEmpty());
+            hookRan.set(true);
+        });
+
+        assertTrue(hookRan.get());
+        assertTrue(completedSavedAfterHook.get());
+        assertEquals(ExtractionStatus.COMPLETED, job.getStatus());
+        assertTrue(recordingStore.findById(job.getId()).isPresent());
     }
 
     @Test

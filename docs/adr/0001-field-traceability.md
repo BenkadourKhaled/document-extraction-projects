@@ -25,13 +25,15 @@ The first vertical slice extracts two fields with rules:
 - `reference_number`;
 - `document_date`.
 
-They are marked `RULE`. No AI/LLM call is added in this iteration. A future AI
-extractor must return a source span; a value without a verifiable span is stored
-as `UNVERIFIED`, never silently accepted.
+They are marked `RULE`. The deterministic rules are always evaluated first. An
+optional local AI extractor (see ADR 0002) may later fill keys the rules did not
+produce. Any AI extractor must return a source span; a value without a verifiable
+span is stored as `UNVERIFIED`, never silently accepted.
 
 > Note: the existing OCR path already uses **Tesseract 5**, an LSTM-based OCR
-> engine. It is an AI/ML component but not a generative model or LLM. This
-> iteration does not change it and adds no AI call, secret or vector store.
+> engine. It is an AI/ML component but not a generative model or LLM. ADR 0002
+> adds an opt-in local Ollama extractor for missing fields; it remains disabled by
+> default and introduces no cloud call, secret or vector store.
 
 ### 2. Coordinates are normalized and rotation-aware
 
@@ -124,22 +126,23 @@ Date parsing marks a value `AMBIGUOUS` when the day/month order or the calendar
 
 ### 8. No pgvector in this iteration
 
-The schema contains no vector column and no pgvector extension. No LLM or
-embedding call is made. The field model, the append-only correction history and
-the deterministic rules are ready for an optional PostgreSQL migration and a
-separate test profile if semantic search becomes a real requirement.
+The schema contains no vector column and no pgvector extension. No embedding call
+is made. The field model, the append-only correction history and the deterministic
+rules are ready for an optional PostgreSQL migration and a separate test profile
+if semantic search becomes a real requirement.
 
-### 9. AI extension point (documented, not implemented)
+### 9. AI extension point
 
-`FieldRule` is the extension point: a future AI extractor must implement the
-same contract and return a `FieldMatch` with the exact `rawValue` observed in the
-line, plus a verification status. `FieldExtractionService` maps that value to an
-existing page span; if no span covers it, the field is persisted as `UNVERIFIED`
-and is never given invented geometry. The AI layer must therefore run on the
-already-extracted page text/spans and may not bypass the append-only correction
-or organization-isolation rules. This iteration implements only
-`ReferenceNumberRule` and `DocumentDateRule`; no AI interface, dependency,
-secret or vector store is added.
+`FieldRule` remains the deterministic extension point. The optional AI extractor
+implements the same persistence contract and returns a `FieldDraft` with the
+exact `rawValue` observed in the line, plus a verification status.
+`FieldExtractionService` maps that value to an existing page span; if no span
+covers it, the field is persisted as `UNVERIFIED` and is never given invented
+geometry. The AI layer therefore runs on the already-extracted page text/spans
+and may not bypass the append-only correction or organization-isolation rules.
+The implemented `OllamaFieldExtractor` follows these rules and is documented in
+[ADR 0002](0002-ollama-field-extraction.md); it is opt-in, disabled by default,
+and requires no secret or vector store.
 
 ## Rollback
 

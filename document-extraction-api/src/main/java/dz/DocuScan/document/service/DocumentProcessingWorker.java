@@ -57,17 +57,19 @@ public class DocumentProcessingWorker {
             }
             ExtractionJob extraction = document.get();
             byte[] content = storage.get(extraction.getStorageKey());
-            extractionService.processJob(extraction, content, extraction.getLanguages());
+            extractionService.processJob(extraction, content, extraction.getLanguages(),
+                    completed -> {
+                        try {
+                            fieldExtractionService.extractAndStore(completed);
+                        } catch (Exception ex) {
+                            // The document result remains valid; field extraction can be
+                            // retried independently without inventing a field.
+                            log.warn("Field extraction failed for document {}: {}",
+                                    completed.getId(), ex.getClass().getSimpleName());
+                        }
+                    });
 
             if (extraction.getStatus() == ExtractionStatus.COMPLETED) {
-                try {
-                    fieldExtractionService.extractAndStore(extraction);
-                } catch (Exception ex) {
-                    // The document result remains valid; field extraction can be
-                    // retried independently without inventing a field.
-                    log.warn("Field extraction failed for document {}: {}",
-                            extraction.getId(), ex.getClass().getSimpleName());
-                }
                 jobs.complete(job.id());
             } else {
                 jobs.fail(job.id(), extraction.getError());

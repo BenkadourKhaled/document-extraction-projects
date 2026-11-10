@@ -61,6 +61,9 @@
       default:
         aliases:
           - backend
+    # Makes host.docker.internal resolve on Linux as well as Docker Desktop.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,6 +95,15 @@
       RETENTION_DAYS: ${RETENTION_DAYS:-30}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:8081}
       TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
+      # Optional local Ollama. Keep disabled unless the host model is running.
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      OLLAMA_MAX_INPUT_CHARACTERS: ${OLLAMA_MAX_INPUT_CHARACTERS:-12000}
+      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-256}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-5m}
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70.0"
     restart: unless-stopped
     mem_limit: 2g

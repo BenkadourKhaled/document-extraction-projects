@@ -4,11 +4,13 @@ import dz.DocuScan.document.dto.PageResult;
 import dz.DocuScan.document.dto.PageSpan;
 import dz.DocuScan.document.model.ExtractionJob;
 import dz.DocuScan.document.model.ExtractionMethod;
+import dz.DocuScan.document.model.FieldType;
 import dz.DocuScan.document.model.VerificationStatus;
 import dz.DocuScan.document.repository.FieldRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -115,6 +118,66 @@ class FieldExtractionServiceTest {
                 1, "Facture numero 2026-001", ExtractionMethod.NATIVE, null, List.of()))));
 
         verify(repository, never()).insertAll(any(), any());
+    }
+
+    @Test
+    void mergesAiFieldsOnlyForKeysMissingFromDeterministicRules() {
+        FieldRepository repository = mock(FieldRepository.class);
+        UUID documentId = UUID.randomUUID();
+        when(repository.existsForDocument(ORG, documentId)).thenReturn(false);
+        OllamaFieldExtractor ai = mock(OllamaFieldExtractor.class);
+
+        ExtractionJob job = job(documentId, List.of(new PageResult(
+                1, "Facture numero 2026-001", ExtractionMethod.NATIVE, null, List.of())));
+        FieldDraft aiDate = new FieldDraft(
+                DocumentDateRule.KEY,
+                DocumentDateRule.LABEL,
+                FieldType.DATE,
+                "31/01/2026",
+                "2026-01-31",
+                null,
+                "OLLAMA",
+                "ollama-llama3.2:1b",
+                VerificationStatus.UNVERIFIED,
+                List.of());
+        when(ai.extract(eq(job), anySet())).thenReturn(List.of(aiDate));
+
+        new FieldExtractionService(repository, ai).extractAndStore(job);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<FieldDraft>> captor = ArgumentCaptor.forClass(List.class);
+        verify(repository).insertAll(eq(job), captor.capture());
+        Map<String, FieldDraft> drafts = captor.getValue().stream()
+                .collect(Collectors.toMap(FieldDraft::fieldKey, draft -> draft));
+
+        assertEquals(2, drafts.size());
+        assertEquals(FieldExtractionService.EXTRACTION_METHOD,
+                drafts.get(ReferenceNumberRule.KEY).extractionMethod());
+        assertEquals("OLLAMA", drafts.get(DocumentDateRule.KEY).extractionMethod());
+        verify(ai).extract(eq(job), eq(Set.of(ReferenceNumberRule.KEY)));
+    }
+
+    @Test
+    void keepsDeterministicFieldsWhenAiFails() {
+        FieldRepository repository = mock(FieldRepository.class);
+        UUID documentId = UUID.randomUUID();
+        when(repository.existsForDocument(ORG, documentId)).thenReturn(false);
+        OllamaFieldExtractor ai = mock(OllamaFieldExtractor.class);
+
+        ExtractionJob job = job(documentId, List.of(new PageResult(
+                1, "Facture numero 2026-001", ExtractionMethod.NATIVE, null, List.of())));
+        when(ai.extract(eq(job), anySet()))
+                .thenThrow(new IllegalStateException("ollama unavailable"));
+
+        new FieldExtractionService(repository, ai).extractAndStore(job);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<FieldDraft>> captor = ArgumentCaptor.forClass(List.class);
+        verify(repository).insertAll(eq(job), captor.capture());
+        assertEquals(1, captor.getValue().size());
+        assertEquals(ReferenceNumberRule.KEY, captor.getValue().get(0).fieldKey());
+        assertEquals(FieldExtractionService.EXTRACTION_METHOD,
+                captor.getValue().get(0).extractionMethod());
     }
 
     private ExtractionJob job(UUID documentId, List<PageResult> pages) {

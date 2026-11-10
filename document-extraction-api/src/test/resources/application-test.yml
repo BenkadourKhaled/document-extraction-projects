@@ -9,6 +9,9 @@ spring:
       enabled: false
 
 app:
+  ai:
+    ollama:
+      enabled: false
   storage:
     type: local
     local-path: ${java.io.tmpdir}/document-extraction-test-storage

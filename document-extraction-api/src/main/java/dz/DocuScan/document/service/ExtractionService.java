@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -234,6 +235,20 @@ public class ExtractionService {
     }
 
     public void processJob(ExtractionJob job, byte[] bytes, String languages) {
+        processJob(job, bytes, languages, null);
+    }
+
+    /**
+     * Runs OCR/native extraction and optional post-completion work before the
+     * completed snapshot is persisted. The hook lets the worker enrich the
+     * document while the API still reports {@code PROCESSING}; callers must not
+     * throw from it when the extracted result has to remain valid.
+     */
+    public void processJob(
+            ExtractionJob job,
+            byte[] bytes,
+            String languages,
+            Consumer<ExtractionJob> afterCompleted) {
         if (store.findById(job.getId()).isEmpty()) return;
 
         long start = System.nanoTime();
@@ -255,6 +270,9 @@ public class ExtractionService {
                     .collect(Collectors.joining("\n\n"));
 
             job.complete(pages, fullText, (System.nanoTime() - start) / 1_000_000);
+            if (afterCompleted != null && job.getStatus() == ExtractionStatus.COMPLETED) {
+                afterCompleted.accept(job);
+            }
         } catch (Exception ex) {
             if (!job.isCancelled()) {
                 String message = ex instanceof DocumentException de

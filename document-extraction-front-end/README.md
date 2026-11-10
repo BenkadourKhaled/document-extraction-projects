@@ -7,7 +7,7 @@
   ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)
   ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
   ![Tests](https://img.shields.io/badge/tests-passing-2EA043)
-  ![No LLM](https://img.shields.io/badge/LLM-none-6B7280)
+  ![AI](https://img.shields.io/badge/AI-API--side-6B7280)
 
   <p>
     <a href="#français">Français</a> ·
@@ -26,9 +26,11 @@ Document Extractor est le frontend d'une API d'extraction documentaire
 image, choisit les langues OCR, suit le traitement asynchrone, puis consulte,
 recherche, copie et télécharge le texte extrait.
 
-Le front ne contient **aucun modèle d'IA, aucun LLM et aucun appel à un service
-d'IA générative**. L'OCR est exécuté par l'API Spring Boot auto-hébergée, avec
-Tesseract et des données linguistiques locales.
+Le front ne contient **aucun modèle d'IA et n'exécute aucun appel LLM**. L'OCR
+est exécuté par l'API Spring Boot auto-hébergée avec Tesseract et des données
+linguistiques locales. L'API peut, si l'organisation l'active, compléter les
+champs manquants avec un LLM local Ollama ; le front se contente d'afficher les
+champs, sources et statuts renvoyés par l'API.
 
 ### Fonctionnalités V1
 
@@ -58,9 +60,10 @@ Tesseract et des données linguistiques locales.
 
 ### IA et technologies
 
-Le frontend **n'exécute aucune IA** : l'IA d'OCR **Tesseract 5 (LSTM)** est
-exécutée côté API via **Tess4J 5.13.0**. L'interface consomme les résultats et les
-champs traçables, sans appel à un LLM ni à un service cloud.
+Le frontend **n'exécute aucune IA** : l'OCR **Tesseract 5 (LSTM)** et
+l'extraction IA optionnelle **Ollama** sont exécutés côté API. L'interface
+consomme les résultats, les champs traçables et leurs statuts, sans appel direct
+à un modèle ni à un service cloud.
 
 | Technologie | Version | Usage |
 | --- | --- | --- |
@@ -326,7 +329,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 
 ### Confidentialité et limites
 
-- **Aucun LLM, aucun modèle de vision, aucun service cloud** dans le front.
+- **Aucun modèle d'IA, aucun appel LLM et aucun service cloud** dans le front.
+  Si l'API active Ollama, les valeurs restent validées côté API avant d'être
+  affichées ; le front ne fait aucune inférence.
 - Le fichier est envoyé uniquement à l'API configurée. L'API le conserve selon la
   politique de rétention de l'organisation (30 jours par défaut).
 - L'aperçu source est récupéré de façon authentifiée et n'est pas mis en cache
@@ -339,7 +344,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
   `ADMIN`/`REVIEWER`.
 - **Traçabilité** : l'interface affiche uniquement les champs extraits par l'API ;
   seuls `reference_number` et `document_date` sont disponibles ; les surlignages
-  sont au niveau ligne ; aucune IA ni `pgvector`.
+  sont au niveau ligne ; les champs peuvent venir des règles déterministes ou de
+  l'IA locale Ollama activée côté API, avec les mêmes contrôles de source ; aucun
+  `pgvector`.
 
 ### Structure du projet
 
@@ -361,7 +368,8 @@ playwright.config.ts    URL, credentials et navigateur E2E
 
 ### Feuille de route
 
-- Couche IA optionnelle via `FieldRule`, avec source vérifiable obligatoire.
+- Afficher la provenance (`RULE` / `OLLAMA`) et la version de l'extracteur dans
+  l'onglet Champs.
 - SSO, facturation et quotas par organisation.
 - Export PDF avec couche texte.
 - Segmentation de tableaux et reconstruction de l'ordre de lecture.
@@ -385,9 +393,11 @@ Users sign in to their organization, upload a PDF or image, choose OCR languages
 follow asynchronous processing, then review, search, copy and download the
 extracted text.
 
-The frontend contains **no AI model, no LLM and no generative-AI service call**.
-OCR runs in the self-hosted Spring Boot API using Tesseract and local language
-data.
+The frontend contains **no AI model and runs no LLM call**. OCR runs in the
+self-hosted Spring Boot API using Tesseract and local language data. When the
+organization enables it, the API may complement missing fields with a local
+Ollama LLM; the frontend only displays the fields, sources and statuses returned
+by the API.
 
 ### V1 features
 
@@ -416,9 +426,9 @@ data.
 
 ### AI and technologies
 
-The frontend **runs no AI**: the **Tesseract 5 (LSTM)** OCR AI runs in the API
-through **Tess4J 5.13.0**. The UI consumes results and traceable fields without
-calling an LLM or a cloud service.
+The frontend **runs no AI**: **Tesseract 5 (LSTM)** OCR and the optional
+**Ollama** AI extraction run in the API. The UI consumes results, traceable
+fields and their statuses without calling a model or a cloud service directly.
 
 | Technology | Version | Purpose |
 | --- | --- | --- |
@@ -648,7 +658,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 
 ### Privacy and limitations
 
-- **No LLM, no vision model, no cloud service** in the frontend.
+- **No AI model, no LLM call and no cloud service** in the frontend. If the API
+  enables Ollama, values are still validated server-side before display; the
+  frontend performs no inference.
 - The file is sent only to the configured API. The API retains it according to
   the organization retention policy (30 days by default).
 - The source preview is fetched with authentication and is not cached long-term in
@@ -660,7 +672,8 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 - History is shared at organization level for `ADMIN`/`REVIEWER` roles.
 - **Traceability**: the UI only displays fields extracted by the API; only
   `reference_number` and `document_date` are available; highlights are
-  line-level; no AI or `pgvector`.
+  line-level; fields may come from deterministic rules or from API-side optional
+  Ollama AI, with the same source checks; no `pgvector`.
 
 ### Project structure
 
@@ -682,7 +695,7 @@ playwright.config.ts    E2E URL, credentials and browser settings
 
 ### Roadmap
 
-- Optional AI layer through `FieldRule`, with a mandatory verifiable source.
+- Show provenance (`RULE` / `OLLAMA`) and extractor version in the Fields tab.
 - SSO, billing and per-organization quotas.
 - PDF export with a text layer.
 - Table segmentation and reading-order reconstruction.

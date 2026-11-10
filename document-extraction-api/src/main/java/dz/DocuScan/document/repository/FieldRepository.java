@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class FieldRepository {
@@ -80,6 +81,7 @@ public class FieldRepository {
         return Boolean.TRUE.equals(exists);
     }
 
+    @Transactional
     public void insertAll(ExtractionJob job, List<FieldDraft> drafts) {
         for (FieldDraft draft : drafts) {
             UUID fieldId = UUID.randomUUID();
