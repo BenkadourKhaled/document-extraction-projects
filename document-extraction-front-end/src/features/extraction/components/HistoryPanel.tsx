@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
-  Archive,
   Ban,
   CheckCircle2,
   ChevronRight,
   Clock,
   FileText,
-  Filter,
   History,
   Image as ImageIcon,
   Loader2,
@@ -40,8 +38,6 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type { HistoryEntry, ExtractionStatus } from '@/api/types';
-import { downloadDocumentsZip } from '@/api/extractionService';
-import { toast } from 'sonner';
 
 interface HistoryPanelProps {
   history: HistoryEntry[];

@@ -7,7 +7,7 @@
   ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
   ![Tesseract](https://img.shields.io/badge/Tesseract-5-4B8BBE)
   ![Tests](https://img.shields.io/badge/tests-passing-2EA043)
-  ![No LLM](https://img.shields.io/badge/LLM-none-6B7280)
+  ![Ollama](https://img.shields.io/badge/Ollama-optional-000000?logo=ollama&logoColor=white)
 
   <p>
     <a href="#français">Français</a> ·
@@ -23,8 +23,10 @@
 
 API REST Spring Boot conçue pour un déploiement **on-premise d'abord**, avec une
 architecture prête pour le SaaS. Elle extrait le texte de PDF natifs, de PDF
-scannés et d'images avec **Tesseract 5**, sans cloud, sans LLM, sans modèle
-génératif et sans modèle de vision.
+scannés et d'images avec **Tesseract 5**, sans cloud ni modèle de vision. Une
+extraction de champs par **LLM local Ollama** peut compléter les règles
+déterministes lorsqu'elle est explicitement activée ; elle est désactivée par
+défaut.
 
 La V1 ajoute le socle professionnel attendu d'un produit commercial :
 
@@ -58,6 +60,11 @@ La V1 ajoute le socle professionnel attendu d'un produit commercial :
   par statut.
 - **Aperçu et téléchargement** : fichier source authentifié, résultat TXT ou
   JSON.
+- **Champs traçables** : `reference_number` et `document_date` détectés par des
+  règles déterministes, complétés en option par un LLM local Ollama pour les clés
+  manquantes ; source page/ligne avec bbox normalisée, statuts `VERIFIED` /
+  `UNVERIFIED` / `AMBIGUOUS` et corrections append-only propagées à toute la
+  lignée du document.
 - **Annulation/suppression** : suppression du document, du fichier source et du
   job associé.
 - **Audit** : connexion, gestion des comptes, changement de mot de passe, création,
@@ -67,7 +74,59 @@ La V1 ajoute le socle professionnel attendu d'un produit commercial :
   production avec migrations Flyway.
 - **Deux stockages** : disque local par défaut, MinIO/S3 via
   `STORAGE_TYPE=s3`.
-- **Aucune dépendance IA générative** : Tesseract et PDFBox uniquement.
+- **IA générative locale optionnelle** : Ollama (`llama3.2:1b` par défaut),
+  désactivé par défaut, sans secret ni service cloud.
+
+### IA intégrée et technologies
+
+L'API combine deux usages de l'IA, tous deux **locaux** :
+
+- **OCR** : **Tesseract 5**, moteur à réseaux de neurones **LSTM**, via
+  **Tess4J 5.13.0**, pour les PDF scannés et les images en français, anglais et
+  arabe ;
+- **Extraction de champs** : **Ollama** (`llama3.2:1b` par défaut), appelé
+  uniquement pour les clés que les règles déterministes n'ont pas trouvées.
+
+Aucun service cloud, aucun embedding et aucun `pgvector` ne sont utilisés. Une
+valeur IA n'est acceptée que si elle apparaît **verbatim** dans le texte extrait,
+sur une ligne avec un libellé reconnu ou seule ; sinon elle est ignorée ou
+marquée `UNVERIFIED`. Aucune géométrie n'est inventée.
+
+| Technologie | Version | Usage |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | Tess4J 5.13.0 | OCR local FR/EN/AR, support RTL |
+| Apache PDFBox | 3.0.5 | Extraction du texte natif, rendu et positions des lignes |
+| Ollama | 0.35+ (testé) | Extraction IA locale optionnelle des champs manquants |
+| llama3.2:1b | — | Modèle local par défaut |
+| Spring Boot | 3.3.13 | API REST, worker, sécurité, audit |
+| Java | 21 | Runtime cible et CI |
+| PostgreSQL 16 / H2 | — | Production et tests (mode PostgreSQL) |
+| Flyway | — | Migrations additives, dont `V3__field_traceability.sql` |
+| MinIO / S3 | — | Stockage des fichiers source |
+| Données Tesseract | — | Modèles linguistiques locaux `fra`, `eng`, `ara` |
+
+### Extraction IA locale avec Ollama (optionnelle)
+
+Le mode est **déterministe d'abord** : Ollama ne remplace jamais un champ trouvé
+par une règle et une panne du modèle ne fait pas échouer le document.
+
+```bash
+ollama pull llama3.2:1b
+curl http://localhost:11434/api/tags
+export OLLAMA_ENABLED=true
+export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_MODEL=llama3.2:1b
+mvn spring-boot:run
+```
+
+Sous Windows, utilisez `$env:OLLAMA_ENABLED = "true"` et `mvn.cmd`.
+En Docker, l'API joint l'hôte via `http://host.docker.internal:11434` ;
+`docker-compose.yml` ajoute `host.docker.internal:host-gateway` pour Linux. Si
+Ollama tourne sur l'hôte, démarrez-le avec `OLLAMA_HOST=0.0.0.0:11434`.
+
+Une valeur IA absente du texte est rejetée ; une date non parsable est ignorée ;
+une date ambiguë reste `AMBIGUOUS`. Le test réel est opt-in :
+`OLLAMA_LIVE_TEST=true mvn -Dtest=OllamaLiveTest test`.
 
 ### Durcissement V1.1
 
@@ -101,6 +160,8 @@ flowchart LR
     E --> F[Worker OCR]
     F --> G[PDFBox / Tesseract]
     G --> C
+    F -.-> I[Ollama optionnel]
+    I -.-> C
     B --> H[Journal d'audit]
     H --> C
 ```
@@ -118,6 +179,7 @@ proxyfier `/api/v1/` vers cette API.
 | Base | PostgreSQL 16 (prod), H2 fichier (local), Flyway |
 | Stockage | Disque local ou MinIO / S3 |
 | OCR | Tesseract 5, Tess4J, Leptonica |
+| Extraction IA (option) | Ollama `llama3.2:1b`, client HTTP JDK |
 | PDF | Apache PDFBox 3 |
 | Détection MIME | Apache Tika 3 |
 | File de jobs | Table `jobs` PostgreSQL, verrouillage transactionnel |
@@ -144,6 +206,31 @@ $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 mvn.cmd spring-boot:run
 ```
 
+#### Variante PostgreSQL local
+
+Pour utiliser PostgreSQL au lieu de H2, créez une fois le rôle et la base avec un
+superutilisateur PostgreSQL. Le mot de passe doit correspondre à
+`POSTGRES_PASSWORD` dans `.env` :
+
+```sql
+CREATE ROLE document LOGIN PASSWORD '<mot de passe>';
+CREATE DATABASE document_extraction OWNER document;
+```
+
+Sous Windows, le script charge `.env`, active le profil `postgres`, utilise le
+stockage disque local et applique les migrations Flyway au démarrage :
+
+```powershell
+.\scripts\run-local-postgres.ps1            # API sur http://localhost:18080
+.\scripts\run-local-postgres.ps1 -Ollama    # active l'extraction Ollama
+.\scripts\run-local-postgres.ps1 -Port 8080 # autre port
+```
+
+Le script exige un jar déjà construit (`target/document-extraction-api-*.jar`).
+Utilisez `-Rebuild` si `mvn.cmd` est dans le `PATH`, ou construisez le jar depuis
+l'IDE. Les tests automatisés restent sur H2 ; le parcours API ci-dessus valide le
+schéma et les requêtes PostgreSQL réels.
+
 Au premier démarrage, un administrateur et une organisation sont créés si la base
 est vide :
 
@@ -158,10 +245,11 @@ est vide :
 
 Services locaux :
 
-- API : `http://localhost:8080`
+- API : `http://localhost:8080` (`18080` avec `run-local-postgres.ps1`)
 - Swagger UI : `http://localhost:8080/swagger-ui.html`
 - Santé : `http://localhost:8080/actuator/health`
-- Données locales : `./data/db` et `./data/storage`
+- Données : `./data/db` (H2), `./data/storage`, ou la base PostgreSQL
+  `document_extraction`
 
 ### Démarrage Docker — PostgreSQL + MinIO
 
@@ -250,6 +338,8 @@ Base : `http://localhost:8080/api/v1`.
 | `GET` | `/extractions/{id}` | Statut et résultat |
 | `GET` | `/extractions/{id}/file` | Fichier source authentifié |
 | `GET` | `/extractions/{id}/download?format=txt\|json` | Résultat |
+| `GET` | `/extractions/{id}/fields` | Champs, sources et corrections |
+| `POST` | `/extractions/{id}/fields/{fieldKey}/corrections` | Correction append-only |
 | `DELETE` | `/extractions/{id}` | Supprime le document |
 | `GET` | `/documents` | Historique, recherche, pagination |
 | `DELETE` | `/documents` | Vide vos propres documents |
@@ -290,6 +380,40 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```
 
 Statuts : `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`.
+
+Les champs structurés séparent la valeur brute, la valeur normalisée (réservée à
+la comparaison) et la valeur effective (dernière correction de la lignée, sinon
+valeur brute). Une valeur sans source fiable est `UNVERIFIED` ; une date dont
+l'ordre jour/mois ou le calendrier n'est pas prouvé est `AMBIGUOUS`. Les
+corrections sont append-only et ne modifient jamais la valeur brute. Les exports
+TXT/JSON utilisent le même service que l'API ; le JSON est additif
+(`schema_version`, `fields`).
+
+L'extraction est **déterministe d'abord**. Si `OLLAMA_ENABLED=true`, un LLM
+local complète uniquement les clés manquantes ; il ne remplace jamais une valeur
+déterministe. Une valeur IA doit correspondre à un span vérifiable, sinon elle
+est `UNVERIFIED` ou rejetée. Aucun `pgvector` n'est utilisé. Les champs sont
+extraits avant la persistance de `COMPLETED` : lorsqu'un client voit ce statut,
+`GET /fields` renvoie déjà le résultat complet.
+
+#### Traçabilité des champs — état d'implémentation
+
+| Composant | État | Détail |
+| --- | --- | --- |
+| Schéma | ✅ | `V3__field_traceability.sql` : lignée, champs, sources et corrections |
+| Règles | ✅ | `FieldRule`, `ReferenceNumberRule`, `DocumentDateRule` |
+| Spans | ✅ | Ligne, bbox `[x0,y0,x1,y1]` normalisée, dimensions et rotation de page |
+| Normalisation | ✅ | NFC + repli des chiffres arabes/persans pour la comparaison uniquement |
+| API | ✅ | `GET /fields`, `POST /fields/{fieldKey}/corrections` |
+| Exports | ✅ | `ExtractionExportService` partagé, JSON additif |
+| Sécurité | ✅ | Filtrage `organization_id`, accès vérifié, audit `FIELD_CORRECTED` |
+| Tests | ✅ | Unités + intégration lignée, corrections et exports |
+
+Les décisions sont détaillées dans
+[`../docs/adr/0001-field-traceability.md`](../docs/adr/0001-field-traceability.md)
+et [`../docs/adr/0002-ollama-field-extraction.md`](../docs/adr/0002-ollama-field-extraction.md),
+et l'état complet dans
+[`../docs/implementation-status.md`](../docs/implementation-status.md).
 
 #### Historique et recherche
 
@@ -332,6 +456,14 @@ complet est fourni dans `.env.example`.
 | `PDF_DPI` | `300` | Rendu PDF avant OCR |
 | `OCR_DEFAULT_LANGUAGES` | `fra+eng` | Langues par défaut |
 | `TESSDATA_PREFIX` | chemin système | Données Tesseract |
+| `OLLAMA_ENABLED` | `false` | Active l'extraction IA locale des champs manquants |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint Ollama (Docker : `http://host.docker.internal:11434`) |
+| `OLLAMA_MODEL` | `llama3.2:1b` | Modèle local déjà téléchargé |
+| `OLLAMA_TIMEOUT_SECONDS` | `120` | Délai maximal par appel |
+| `OLLAMA_MAX_INPUT_CHARACTERS` | `12000` | Troncature du texte envoyé |
+| `OLLAMA_NUM_PREDICT` | `256` | Tokens générés au maximum |
+| `OLLAMA_NUM_CTX` | `8192` | Fenêtre de contexte |
+| `OLLAMA_KEEP_ALIVE` | `5m` | Durée de résidence du modèle |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Origine front autorisée ; Compose utilise `8081` |
 | `API_PORT` / `FRONTEND_PORT` | `8080` / `8081` | Ports hôte Compose |
 | `FRONTEND_CONTEXT` | `../document-extraction-front-end` | Dépôt frontend pour le build Compose |
@@ -356,8 +488,10 @@ mvn -B verify
 
 La suite couvre la détection MIME, PDFBox, le prétraitement, l'OCR, la
 normalisation arabe, le contrôleur, l'authentification, la révocation JWT, la
-limitation des connexions, la persistance, la file durable, le worker et le cycle
-de vie documentaire.
+limitation des connexions, la persistance, la file durable, le worker, le cycle
+de vie documentaire, les règles de champs et l'extraction IA Ollama (client HTTP
+simulé, validation des spans et des dates). Le test contre une instance Ollama
+réelle est ignoré sauf si `OLLAMA_LIVE_TEST=true`.
 
 Dernier benchmark synthétique V1.1 : FR `0.00 %` CER / `0.00 %` WER, EN
 `0.00 %` / `0.00 %`, AR `3.61 %` / `4.35 %` ; agrégat `1.34 %` CER /
@@ -408,16 +542,22 @@ La checklist complète est dans [SECURITY.md](SECURITY.md). Points minimum :
   client anonymisé et approuvé pour le test.
 - Les images MinIO officielles ne sont plus publiées ; le miroir par défaut doit
   être vérifié et épinglé, ou remplacé par un stockage S3 géré.
+- **Traçabilité** : seuls `reference_number` et `document_date` sont extraits ;
+  les spans sont au niveau ligne ; la dernière correction fait foi (pas de
+  validation à quatre yeux ni de suppression) ; l'IA locale Ollama est
+  optionnelle et désactivée par défaut ; aucun `pgvector`.
 
 ### Structure
 
 ```text
 src/main/java/dz/DocuScan/document/
+  ai/           client HTTP Ollama et propriétés de l'IA locale
   config/       propriétés, CORS, stockage
   controller/   auth, documents, extractions, users, audit
   dto/          réponses API
   exception/    ProblemDetail
   extractor/    PDFBox, Tesseract, prétraitement
+  field/        règles déterministes, extracteur Ollama et normalisation
   model/        utilisateur, rôle, job, statut
   repository/   JDBC, documents, jobs, audit, utilisateurs
   security/     JWT, filtre, Spring Security
@@ -448,7 +588,9 @@ commerciale nécessite une autorisation écrite préalable. Voir le fichier
 
 Spring Boot REST API built **on-premise first** and ready for a SaaS evolution.
 It extracts text from native PDFs, scanned PDFs and images with **Tesseract 5**,
-with no cloud OCR, no LLM, no generative model and no vision model.
+without cloud OCR or a vision model. Field extraction with a **local Ollama LLM**
+can complement the deterministic rules when explicitly enabled; it is disabled by
+default.
 
 V1 adds the professional foundation of a commercial product:
 
@@ -480,6 +622,11 @@ V1 adds the professional foundation of a commercial product:
   Unicode normalization and multi-script passes.
 - **Server history**: paginated list, search by name or content, status filter.
 - **Preview and download**: authenticated source file, TXT or JSON result.
+- **Traceable fields**: `reference_number` and `document_date` detected by
+  deterministic rules, optionally complemented by a local Ollama LLM for missing
+  keys; page/line source with a normalized bbox, `VERIFIED` / `UNVERIFIED` /
+  `AMBIGUOUS` statuses and append-only corrections propagated across the
+  document lineage.
 - **Cancel/delete**: removes the document, source file and associated job.
 - **Audit**: login, account management, password changes, creation, deletion and
   retention purge.
@@ -488,7 +635,58 @@ V1 adds the professional foundation of a commercial product:
   production with Flyway migrations.
 - **Two storage backends**: local disk by default, MinIO/S3 with
   `STORAGE_TYPE=s3`.
-- **No generative AI dependency**: Tesseract and PDFBox only.
+- **Optional local generative AI**: Ollama (`llama3.2:1b` by default), disabled
+  by default, with no secret or cloud service.
+
+### Integrated AI and technologies
+
+The API combines two AI uses, both **local**:
+
+- **OCR**: **Tesseract 5**, an **LSTM** neural OCR engine, through
+  **Tess4J 5.13.0**, for scanned PDFs and images in French, English and Arabic;
+- **Field extraction**: **Ollama** (`llama3.2:1b` by default), called only for
+  keys the deterministic rules did not produce.
+
+No cloud service, embedding or `pgvector` is used. An AI value is accepted only
+when it appears **verbatim** in the extracted text, on a recognized-label line or
+alone; otherwise it is discarded or marked `UNVERIFIED`. No geometry is invented.
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| Tesseract 5 (LSTM) | Tess4J 5.13.0 | Local FR/EN/AR OCR, RTL support |
+| Apache PDFBox | 3.0.5 | Native text extraction, rendering and line positions |
+| Ollama | 0.35+ (tested) | Optional local AI extraction of missing fields |
+| llama3.2:1b | — | Default local model |
+| Spring Boot | 3.3.13 | REST API, worker, security, audit |
+| Java | 21 | Target runtime and CI |
+| PostgreSQL 16 / H2 | — | Production and tests (PostgreSQL mode) |
+| Flyway | — | Additive migrations, including `V3__field_traceability.sql` |
+| MinIO / S3 | — | Source file storage |
+| Tesseract data | — | Local `fra`, `eng`, `ara` language models |
+
+### Optional local AI extraction with Ollama
+
+The mode is **deterministic first**: Ollama never replaces a field found by a
+rule, and a model outage never fails the document.
+
+```bash
+ollama pull llama3.2:1b
+curl http://localhost:11434/api/tags
+export OLLAMA_ENABLED=true
+export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_MODEL=llama3.2:1b
+mvn spring-boot:run
+```
+
+On Windows, use `$env:OLLAMA_ENABLED = "true"` and `mvn.cmd`.
+In Docker, the API reaches the host through
+`http://host.docker.internal:11434`; `docker-compose.yml` adds
+`host.docker.internal:host-gateway` for Linux. When Ollama runs on the host,
+start it with `OLLAMA_HOST=0.0.0.0:11434`.
+
+An AI value absent from the text is rejected; an unparsable date is discarded; an
+ambiguous date remains `AMBIGUOUS`. The real test is opt-in:
+`OLLAMA_LIVE_TEST=true mvn -Dtest=OllamaLiveTest test`.
 
 ### V1.1 hardening
 
@@ -547,6 +745,30 @@ $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 mvn.cmd spring-boot:run
 ```
 
+#### Local PostgreSQL variant
+
+To use PostgreSQL instead of H2, create the role and database once as a
+PostgreSQL superuser. The password must match `POSTGRES_PASSWORD` in `.env`:
+
+```sql
+CREATE ROLE document LOGIN PASSWORD '<password>';
+CREATE DATABASE document_extraction OWNER document;
+```
+
+On Windows, the script loads `.env`, enables the `postgres` profile, uses local
+disk storage and applies Flyway migrations at startup:
+
+```powershell
+.\scripts\run-local-postgres.ps1            # API on http://localhost:18080
+.\scripts\run-local-postgres.ps1 -Ollama    # enable Ollama extraction
+.\scripts\run-local-postgres.ps1 -Port 8080 # another port
+```
+
+The script expects an existing jar (`target/document-extraction-api-*.jar`). Use
+`-Rebuild` when `mvn.cmd` is on `PATH`, or build the jar from your IDE. Automated
+tests still run on H2; the API flow above exercises the real PostgreSQL schema
+and queries.
+
 On first start, an administrator and organization are created if the database is
 empty:
 
@@ -561,10 +783,11 @@ empty:
 
 Local services:
 
-- API: `http://localhost:8080`
+- API: `http://localhost:8080` (`18080` with `run-local-postgres.ps1`)
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Health: `http://localhost:8080/actuator/health`
-- Local data: `./data/db` and `./data/storage`
+- Data: `./data/db` (H2), `./data/storage`, or the PostgreSQL
+  `document_extraction` database
 
 ### Docker — PostgreSQL + MinIO
 
@@ -640,12 +863,47 @@ Base URL: `http://localhost:8080/api/v1`.
 | `GET` | `/extractions/{id}` | Status and result |
 | `GET` | `/extractions/{id}/file` | Authenticated source file |
 | `GET` | `/extractions/{id}/download?format=txt\|json` | Result download |
+| `GET` | `/extractions/{id}/fields` | Fields, sources and corrections |
+| `POST` | `/extractions/{id}/fields/{fieldKey}/corrections` | Append-only correction |
 | `DELETE` | `/extractions/{id}` | Delete a document |
 | `GET` | `/documents` | History, search, pagination |
 | `DELETE` | `/documents` | Clear your own documents |
 | `GET` | `/audit` | Audit log (admin) |
 
 Statuses: `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`.
+
+Structured fields separate the raw value, the normalized value (comparison only)
+and the effective value (latest correction in the lineage, otherwise the raw
+value). A value without a reliable source is `UNVERIFIED`; a date whose
+day/month order or calendar cannot be proven is `AMBIGUOUS`. Corrections are
+append-only and never modify the raw value. TXT/JSON exports use the same service
+as the API; JSON is additive (`schema_version`, `fields`).
+
+Extraction is **deterministic first**. When `OLLAMA_ENABLED=true`, a local LLM
+only fills missing keys; it never replaces a deterministic value. An AI value
+must match a verifiable span, otherwise it is `UNVERIFIED` or discarded. No
+`pgvector` is used. Fields are extracted before the `COMPLETED` snapshot is
+persisted, so `GET /fields` already returns the full result when a client sees
+that status.
+
+#### Field traceability — implementation status
+
+| Component | Status | Detail |
+| --- | --- | --- |
+| Schema | ✅ | `V3__field_traceability.sql`: lineage, fields, sources and corrections |
+| Rules | ✅ | `FieldRule`, `ReferenceNumberRule`, `DocumentDateRule` |
+| Spans | ✅ | Line-level, normalized `[x0,y0,x1,y1]` bbox, page dimensions and rotation |
+| Normalization | ✅ | NFC + Arabic-Indic/Persian digit folding for comparison only |
+| API | ✅ | `GET /fields`, `POST /fields/{fieldKey}/corrections` |
+| Exports | ✅ | Shared `ExtractionExportService`, additive JSON |
+| Security | ✅ | `organization_id` filtering, access checks, `FIELD_CORRECTED` audit |
+| Tests | ✅ | Unit tests + lineage, correction and export integration |
+
+Decisions are documented in
+[`../docs/adr/0001-field-traceability.md`](../docs/adr/0001-field-traceability.md)
+and [`../docs/adr/0002-ollama-field-extraction.md`](../docs/adr/0002-ollama-field-extraction.md),
+and the complete status in
+[`../docs/implementation-status.md`](../docs/implementation-status.md).
 
 ### Configuration
 
@@ -676,6 +934,14 @@ All values can be overridden by environment variables; see `.env.example`.
 | `PDF_DPI` | `300` | PDF render resolution before OCR |
 | `OCR_DEFAULT_LANGUAGES` | `fra+eng` | Default languages |
 | `TESSDATA_PREFIX` | system path | Tesseract data |
+| `OLLAMA_ENABLED` | `false` | Enable local AI extraction of missing fields |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint (Docker: `http://host.docker.internal:11434`) |
+| `OLLAMA_MODEL` | `llama3.2:1b` | Local model already pulled |
+| `OLLAMA_TIMEOUT_SECONDS` | `120` | Per-call timeout |
+| `OLLAMA_MAX_INPUT_CHARACTERS` | `12000` | Truncate text sent to the model |
+| `OLLAMA_NUM_PREDICT` | `256` | Maximum generated tokens |
+| `OLLAMA_NUM_CTX` | `8192` | Context window |
+| `OLLAMA_KEEP_ALIVE` | `5m` | How long the model stays in memory |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Allowed frontend origin; Compose uses `8081` |
 | `API_PORT` / `FRONTEND_PORT` | `8080` / `8081` | Compose host ports |
 | `FRONTEND_CONTEXT` | `../document-extraction-front-end` | Frontend checkout used by the Compose build |
@@ -699,7 +965,9 @@ mvn -B verify
 
 The suite covers MIME detection, PDFBox, preprocessing, OCR, Arabic
 normalization, the controller, authentication, JWT revocation, login throttling,
-persistence, the durable queue, the worker and the document lifecycle.
+persistence, the durable queue, the worker, the document lifecycle, field rules
+and Ollama AI extraction (fake HTTP client, span and date validation). The test
+against a real Ollama instance is skipped unless `OLLAMA_LIVE_TEST=true`.
 
 Latest synthetic V1.1 benchmark: FR `0.00 %` CER / `0.00 %` WER, EN
 `0.00 %` / `0.00 %`, AR `3.61 %` / `4.35 %`; aggregate `1.34 %` CER /
@@ -749,16 +1017,21 @@ The full checklist is in [SECURITY.md](SECURITY.md). Minimum:
   approved customer corpus.
 - Official MinIO images are no longer published; verify and pin the default mirror,
   or use a managed S3-compatible storage service.
+- **Traceability**: only `reference_number` and `document_date` are extracted;
+  spans are line-level; the latest correction wins (no four-eyes approval or
+  deletion); local Ollama AI is optional and disabled by default; no `pgvector`.
 
 ### Structure
 
 ```text
 src/main/java/dz/DocuScan/document/
+  ai/           Ollama HTTP client and local AI properties
   config/       properties, CORS, storage
   controller/   auth, documents, extractions, users, audit
   dto/          API responses
   exception/    ProblemDetail
   extractor/    PDFBox, Tesseract, preprocessing
+  field/        deterministic rules, Ollama extractor and normalization
   model/        user, role, job, status
   repository/   JDBC, documents, jobs, audit, users
   security/     JWT, filter, Spring Security

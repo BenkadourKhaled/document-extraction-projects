@@ -2,8 +2,9 @@
 
 This benchmark measures Tesseract OCR quality for the three supported
 languages: French (`fra`), English (`eng`) and Arabic (`ara`). It uses the same
-Tesseract installation and language data as the production API image. No LLM,
-generative model or external OCR service is involved.
+Tesseract installation and language data as the production API image. The
+benchmark itself invokes only Tesseract: it does **not** exercise the optional
+Ollama field extractor and uses no external OCR service.
 
 ## Corpus
 

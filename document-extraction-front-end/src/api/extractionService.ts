@@ -85,6 +85,19 @@ export async function getExtractionFile(id: string, signal?: AbortSignal): Promi
   return data;
 }
 
+export async function downloadExtraction(
+  id: string,
+  format: 'txt' | 'json',
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`${BASE}/${id}/download`, {
+    params: { format },
+    responseType: 'blob',
+    signal,
+  });
+  return data;
+}
+
 export async function deleteExtraction(id: string): Promise<void> {
   await apiClient.delete(`${BASE}/${id}`);
 }

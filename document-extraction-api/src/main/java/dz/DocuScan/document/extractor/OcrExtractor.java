@@ -2,8 +2,10 @@ package dz.DocuScan.document.extractor;
 
 import dz.DocuScan.document.config.ExtractionProperties;
 import dz.DocuScan.document.dto.PageResult;
+import dz.DocuScan.document.dto.PageSpan;
 import dz.DocuScan.document.exception.DocumentException;
 import dz.DocuScan.document.model.ExtractionMethod;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
@@ -133,7 +135,48 @@ public class OcrExtractor implements DocumentExtractor {
             }
         }
 
-        return new PageResult(number, best.text(), ExtractionMethod.OCR, best.confidence());
+        return pageResult(number, best, prepared);
+    }
+
+    private PageResult pageResult(int number, OcrCandidate best, ImagePreprocessor.PreparedImage prepared) {
+        List<PageSpan> spans = new ArrayList<>();
+        String text = best.text();
+        int cursor = 0;
+
+        for (RawOcrLine line : best.lines()) {
+            if (line.text().isEmpty()) {
+                continue;
+            }
+            int start = text.indexOf(line.text(), cursor);
+            if (start < 0) {
+                continue;
+            }
+            int end = start + line.text().length();
+            cursor = end;
+
+            ImagePreprocessor.BoundingBox box =
+                    prepared.toOriginalBoundingBox(line.boundingBox());
+            spans.add(new PageSpan(
+                    line.text(),
+                    start,
+                    end,
+                    normalize(box.x0(), prepared.originalWidth()),
+                    normalize(box.y0(), prepared.originalHeight()),
+                    normalize(box.x1(), prepared.originalWidth()),
+                    normalize(box.y1(), prepared.originalHeight()),
+                    "OCR_PIXELS",
+                    prepared.originalWidth(),
+                    prepared.originalHeight(),
+                    0,
+                    line.confidence() == null ? null : Math.max(0.0, Math.min(1.0, line.confidence() / 100.0))));
+        }
+
+        return new PageResult(
+                number, text, ExtractionMethod.OCR, best.confidence(), List.copyOf(spans));
+    }
+
+    private double normalize(double value, double dimension) {
+        return Math.max(0.0, Math.min(1.0, value / Math.max(1.0, dimension)));
     }
 
     private OcrCandidate ocr(BufferedImage image, String language, int pageSegMode) throws Exception {
@@ -145,6 +188,7 @@ public class OcrExtractor implements DocumentExtractor {
 
         List<Word> lines = tesseract.getWords(image, TessPageIteratorLevel.RIL_TEXTLINE);
         List<String> values = new ArrayList<>();
+        List<RawOcrLine> rawLines = new ArrayList<>();
         double confidenceSum = 0.0;
         int confidenceCount = 0;
 
@@ -157,7 +201,13 @@ public class OcrExtractor implements DocumentExtractor {
                 continue;
             }
 
+            Rectangle box = line.getBoundingBox();
+            if (box == null) {
+                continue;
+            }
+
             values.add(value);
+            rawLines.add(new RawOcrLine(value, box, (double) line.getConfidence()));
             confidenceSum += Math.max(0.0, Math.min(100.0, line.getConfidence()));
             confidenceCount++;
         }
@@ -167,7 +217,7 @@ public class OcrExtractor implements DocumentExtractor {
                 ? 0.0
                 : Math.max(0.0, Math.min(1.0, confidenceSum / confidenceCount / 100.0));
 
-        return new OcrCandidate(text, confidence, language, pageSegMode);
+        return new OcrCandidate(text, confidence, language, pageSegMode, List.copyOf(rawLines));
     }
 
     private OcrCandidate best(List<OcrCandidate> candidates) {
@@ -271,9 +321,18 @@ public class OcrExtractor implements DocumentExtractor {
         }
     }
 
-    record OcrCandidate(String text, double confidence, String language, int pageSegMode) {
+    record RawOcrLine(String text, Rectangle boundingBox, Double confidence) {
+    }
 
-        private static final OcrCandidate EMPTY = new OcrCandidate("", 0.0, "", PSM_AUTO);
+    record OcrCandidate(
+            String text,
+            double confidence,
+            String language,
+            int pageSegMode,
+            List<RawOcrLine> lines) {
+
+        private static final OcrCandidate EMPTY =
+                new OcrCandidate("", 0.0, "", PSM_AUTO, List.of());
 
         double score() {
             int useful = OcrTextNormalizer.usefulCharacters(text);

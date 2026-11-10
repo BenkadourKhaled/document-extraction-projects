@@ -1,6 +1,7 @@
 package dz.DocuScan.document.service;
 
 import dz.DocuScan.document.config.QueueProperties;
+import dz.DocuScan.document.field.FieldExtractionService;
 import dz.DocuScan.document.model.ExtractionJob;
 import dz.DocuScan.document.model.ExtractionStatus;
 import dz.DocuScan.document.repository.JobRepository;
@@ -23,6 +24,7 @@ public class DocumentProcessingWorker {
     private final ExtractionResultStore store;
     private final DocumentStorage storage;
     private final ExtractionService extractionService;
+    private final FieldExtractionService fieldExtractionService;
     private final QueueProperties properties;
 
     public DocumentProcessingWorker(
@@ -30,11 +32,13 @@ public class DocumentProcessingWorker {
             ExtractionResultStore store,
             DocumentStorage storage,
             ExtractionService extractionService,
+            FieldExtractionService fieldExtractionService,
             QueueProperties properties) {
         this.jobs = jobs;
         this.store = store;
         this.storage = storage;
         this.extractionService = extractionService;
+        this.fieldExtractionService = fieldExtractionService;
         this.properties = properties;
     }
 
@@ -53,7 +57,17 @@ public class DocumentProcessingWorker {
             }
             ExtractionJob extraction = document.get();
             byte[] content = storage.get(extraction.getStorageKey());
-            extractionService.processJob(extraction, content, extraction.getLanguages());
+            extractionService.processJob(extraction, content, extraction.getLanguages(),
+                    completed -> {
+                        try {
+                            fieldExtractionService.extractAndStore(completed);
+                        } catch (Exception ex) {
+                            // The document result remains valid; field extraction can be
+                            // retried independently without inventing a field.
+                            log.warn("Field extraction failed for document {}: {}",
+                                    completed.getId(), ex.getClass().getSimpleName());
+                        }
+                    });
 
             if (extraction.getStatus() == ExtractionStatus.COMPLETED) {
                 jobs.complete(job.id());

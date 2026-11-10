@@ -7,7 +7,7 @@
   ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)
   ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
   ![Tests](https://img.shields.io/badge/tests-passing-2EA043)
-  ![No LLM](https://img.shields.io/badge/LLM-none-6B7280)
+  ![AI](https://img.shields.io/badge/AI-API--side-6B7280)
 
   <p>
     <a href="#français">Français</a> ·
@@ -26,9 +26,11 @@ Document Extractor est le frontend d'une API d'extraction documentaire
 image, choisit les langues OCR, suit le traitement asynchrone, puis consulte,
 recherche, copie et télécharge le texte extrait.
 
-Le front ne contient **aucun modèle d'IA, aucun LLM et aucun appel à un service
-d'IA générative**. L'OCR est exécuté par l'API Spring Boot auto-hébergée, avec
-Tesseract et des données linguistiques locales.
+Le front ne contient **aucun modèle d'IA et n'exécute aucun appel LLM**. L'OCR
+est exécuté par l'API Spring Boot auto-hébergée avec Tesseract et des données
+linguistiques locales. L'API peut, si l'organisation l'active, compléter les
+champs manquants avec un LLM local Ollama ; le front se contente d'afficher les
+champs, sources et statuts renvoyés par l'API.
 
 ### Fonctionnalités V1
 
@@ -56,6 +58,24 @@ Tesseract et des données linguistiques locales.
 - **Thème clair/sombre**, responsive mobile, tablette et desktop.
 - **Accessibilité** : navigation clavier, ARIA, focus visible, zones `aria-live`.
 
+### IA et technologies
+
+Le frontend **n'exécute aucune IA** : l'OCR **Tesseract 5 (LSTM)** et
+l'extraction IA optionnelle **Ollama** sont exécutés côté API. L'interface
+consomme les résultats, les champs traçables et leurs statuts, sans appel direct
+à un modèle ni à un service cloud.
+
+| Technologie | Version | Usage |
+| --- | --- | --- |
+| React | 18.3 | Interface de revue |
+| TypeScript | 5.5 | Typage strict |
+| Vite | 5.4 | Build et serveur de développement |
+| TanStack Query / Axios | 5 / 1.20 | Données serveur et appels API |
+| react-pdf / pdf.js | 7.7 | Aperçu PDF et surlignage |
+| Tailwind CSS / shadcn/ui | 3 / Radix UI | Design system |
+| i18next | 26 | Français, anglais, arabe (RTL) |
+| Vitest / Playwright | 2.1 / 1.64 | Tests unitaires et E2E |
+
 ### Durcissement V1.1
 
 - **Profil** : modification du nom d'affichage depuis le menu du compte.
@@ -73,6 +93,22 @@ Tesseract et des données linguistiques locales.
 - **Validation E2E** : parcours Playwright connexion/upload/résultat/historique,
   administration et révocation de session.
 
+### Revue des champs et traçabilité
+
+- **Onglet Champs** dans le panneau de résultat : libellé, valeur brute, valeur
+  effective, statut `VERIFIED` / `UNVERIFIED` / `AMBIGUOUS` et badge « corrigé ».
+- **Source vérifiable** : bouton vers la page source et surlignage de la bbox
+  normalisée sur l'aperçu, sans reconstruction de coordonnées côté client.
+- **Correction** : dialogue avec motif, historique append-only et valeur effective
+  mise à jour ; la valeur brute n'est jamais réécrite.
+- **Exports serveur** : les téléchargements TXT/JSON utilisent
+  `GET /extractions/{id}/download` et incluent les valeurs effectives ; l'UI ne
+  reconstruit plus les fichiers localement.
+- **Bidi** : les valeurs utilisent `dir="auto"`, les chiffres arabes/persans sont
+  affichés tels quels et la normalisation reste côté API.
+- **Tests** : Vitest/MSW pour les champs, corrections, historique et surlignage ;
+  parcours Playwright pour la revue et la persistance après réouverture.
+
 ### Architecture
 
 ```text
@@ -87,6 +123,9 @@ Navigateur
        ├─ POST   /api/v1/extractions              (upload multipart, 202)
        ├─ GET    /api/v1/extractions/{id}         (polling)
        ├─ GET    /api/v1/extractions/{id}/file    (aperçu authentifié)
+       ├─ GET    /api/v1/extractions/{id}/fields  (champs, sources, corrections)
+       ├─ POST   /api/v1/extractions/{id}/fields/{key}/corrections (correction)
+       ├─ GET    /api/v1/extractions/{id}/download (export TXT/JSON serveur)
        ├─ GET    /api/v1/documents                (historique serveur)
        └─ DELETE /api/v1/extractions/{id}         (annulation/suppression)
 ```
@@ -216,8 +255,10 @@ erreurs sont normalisées dans un objet `ApiError` unique :
 - fichier trop volumineux ;
 - session expirée.
 
-Le polling s'arrête dès qu'un statut terminal est reçu. La suppression d'une
-extraction en cours appelle `DELETE`, puis réinitialise l'écran.
+Le polling s'arrête dès qu'un statut terminal est reçu. L'API ne persiste
+`COMPLETED` qu'après l'extraction des champs : l'onglet **Champs** est donc prêt
+dès l'affichage du résultat. La suppression d'une extraction en cours appelle
+`DELETE`, puis réinitialise l'écran.
 
 ### Tests et qualité
 
@@ -290,7 +331,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 
 ### Confidentialité et limites
 
-- **Aucun LLM, aucun modèle de vision, aucun service cloud** dans le front.
+- **Aucun modèle d'IA, aucun appel LLM et aucun service cloud** dans le front.
+  Si l'API active Ollama, les valeurs restent validées côté API avant d'être
+  affichées ; le front ne fait aucune inférence.
 - Le fichier est envoyé uniquement à l'API configurée. L'API le conserve selon la
   politique de rétention de l'organisation (30 jours par défaut).
 - L'aperçu source est récupéré de façon authentifiée et n'est pas mis en cache
@@ -301,6 +344,11 @@ docker run -d --name web --network document-extractor -p 8081:80 \
   message de repli et le téléchargement du fichier original sont fournis.
 - L'historique est partagé au niveau de l'organisation pour les rôles
   `ADMIN`/`REVIEWER`.
+- **Traçabilité** : l'interface affiche uniquement les champs extraits par l'API ;
+  seuls `reference_number` et `document_date` sont disponibles ; les surlignages
+  sont au niveau ligne ; les champs peuvent venir des règles déterministes ou de
+  l'IA locale Ollama activée côté API, avec les mêmes contrôles de source ; aucun
+  `pgvector`.
 
 ### Structure du projet
 
@@ -322,6 +370,8 @@ playwright.config.ts    URL, credentials et navigateur E2E
 
 ### Feuille de route
 
+- Afficher la provenance (`RULE` / `OLLAMA`) et la version de l'extracteur dans
+  l'onglet Champs.
 - SSO, facturation et quotas par organisation.
 - Export PDF avec couche texte.
 - Segmentation de tableaux et reconstruction de l'ordre de lecture.
@@ -345,9 +395,11 @@ Users sign in to their organization, upload a PDF or image, choose OCR languages
 follow asynchronous processing, then review, search, copy and download the
 extracted text.
 
-The frontend contains **no AI model, no LLM and no generative-AI service call**.
-OCR runs in the self-hosted Spring Boot API using Tesseract and local language
-data.
+The frontend contains **no AI model and runs no LLM call**. OCR runs in the
+self-hosted Spring Boot API using Tesseract and local language data. When the
+organization enables it, the API may complement missing fields with a local
+Ollama LLM; the frontend only displays the fields, sources and statuses returned
+by the API.
 
 ### V1 features
 
@@ -374,6 +426,23 @@ data.
 - **Accessibility**: keyboard navigation, ARIA, visible focus, `aria-live`
   regions.
 
+### AI and technologies
+
+The frontend **runs no AI**: **Tesseract 5 (LSTM)** OCR and the optional
+**Ollama** AI extraction run in the API. The UI consumes results, traceable
+fields and their statuses without calling a model or a cloud service directly.
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| React | 18.3 | Review UI |
+| TypeScript | 5.5 | Strict typing |
+| Vite | 5.4 | Build and dev server |
+| TanStack Query / Axios | 5 / 1.20 | Server data and API calls |
+| react-pdf / pdf.js | 7.7 | PDF preview and highlighting |
+| Tailwind CSS / shadcn/ui | 3 / Radix UI | Design system |
+| i18next | 26 | French, English, Arabic (RTL) |
+| Vitest / Playwright | 2.1 / 1.64 | Unit and E2E tests |
+
 ### V1.1 hardening
 
 - **Profile**: edit the display name from the account menu.
@@ -387,6 +456,22 @@ data.
   original-file download; OCR remains available.
 - **E2E validation**: Playwright flows for login/upload/result/history, user
   administration and session revocation.
+
+### Field review and traceability
+
+- **Fields tab** in the result panel: label, raw value, effective value,
+  `VERIFIED` / `UNVERIFIED` / `AMBIGUOUS` status and a “corrected” badge.
+- **Verifiable source**: a button jumps to the source page and highlights the
+  normalized bbox on the preview, without rebuilding coordinates on the client.
+- **Correction**: dialog with a reason, append-only history and an updated
+  effective value; the raw value is never rewritten.
+- **Server exports**: TXT/JSON downloads use
+  `GET /extractions/{id}/download` and include effective values; the UI no longer
+  rebuilds files locally.
+- **Bidi**: values use `dir="auto"`, Arabic-Indic/Persian digits are displayed
+  as-is and normalization stays on the API side.
+- **Tests**: Vitest/MSW for fields, corrections, history and highlighting;
+  Playwright flow for review and persistence after reopening.
 
 ### Architecture
 
@@ -402,6 +487,9 @@ Browser
        ├─ POST   /api/v1/extractions              (multipart upload, 202)
        ├─ GET    /api/v1/extractions/{id}         (polling)
        ├─ GET    /api/v1/extractions/{id}/file    (authenticated preview)
+       ├─ GET    /api/v1/extractions/{id}/fields  (fields, sources, corrections)
+       ├─ POST   /api/v1/extractions/{id}/fields/{key}/corrections (correction)
+       ├─ GET    /api/v1/extractions/{id}/download (server TXT/JSON export)
        ├─ GET    /api/v1/documents                (server history)
        └─ DELETE /api/v1/extractions/{id}         (cancel/delete)
 ```
@@ -499,8 +587,9 @@ are normalized into one `ApiError` shape:
 - file too large;
 - expired session.
 
-Polling stops on a terminal status. Deleting a running extraction calls
-`DELETE`, then resets the screen.
+Polling stops on a terminal status. The API persists `COMPLETED` only after field
+extraction, so the **Fields** tab is ready as soon as the result is shown.
+Deleting a running extraction calls `DELETE`, then resets the screen.
 
 ### Tests and quality
 
@@ -572,7 +661,9 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 
 ### Privacy and limitations
 
-- **No LLM, no vision model, no cloud service** in the frontend.
+- **No AI model, no LLM call and no cloud service** in the frontend. If the API
+  enables Ollama, values are still validated server-side before display; the
+  frontend performs no inference.
 - The file is sent only to the configured API. The API retains it according to
   the organization retention policy (30 days by default).
 - The source preview is fetched with authentication and is not cached long-term in
@@ -582,6 +673,10 @@ docker run -d --name web --network document-extractor -p 8081:80 \
 - TIFF files are accepted by OCR; inline preview depends on the browser. A fallback
   message and original-file download are provided.
 - History is shared at organization level for `ADMIN`/`REVIEWER` roles.
+- **Traceability**: the UI only displays fields extracted by the API; only
+  `reference_number` and `document_date` are available; highlights are
+  line-level; fields may come from deterministic rules or from API-side optional
+  Ollama AI, with the same source checks; no `pgvector`.
 
 ### Project structure
 
@@ -603,6 +698,7 @@ playwright.config.ts    E2E URL, credentials and browser settings
 
 ### Roadmap
 
+- Show provenance (`RULE` / `OLLAMA`) and extractor version in the Fields tab.
 - SSO, billing and per-organization quotas.
 - PDF export with a text layer.
 - Table segmentation and reading-order reconstruction.

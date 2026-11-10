@@ -46,6 +46,20 @@ work.
 - Audit events record actor, action, IP, user agent and document id for sensitive
   operations.
 
+### Optional local AI (Ollama)
+
+- Ollama extraction is disabled by default (`OLLAMA_ENABLED=false`). Enabling it
+  is an explicit operator decision.
+- The model must run on the same host or a trusted private network. Ollama has no
+  authentication by default: never expose port `11434` to the internet or to an
+  untrusted network segment.
+- The API sends only the already-extracted page text, bounded by
+  `OLLAMA_MAX_INPUT_CHARACTERS`, and never the source file, credentials or
+  secrets.
+- Documents are treated as untrusted data in the prompt, and every returned value
+  is re-validated against the stored text and line spans before persistence.
+- Prompts, model responses and extracted values are never logged.
+
 ### Production safeguards
 
 - Profiles `postgres` and `prod` refuse to start with the development JWT secret,
@@ -64,6 +78,7 @@ work.
 - [ ] Pin `MINIO_IMAGE` by digest after supply-chain review.
 - [ ] Terminate TLS and redirect HTTP to HTTPS.
 - [ ] Restrict API, PostgreSQL, MinIO and Prometheus ports at the firewall.
+- [ ] Keep Ollama on localhost or a trusted network; never expose port `11434`.
 - [ ] Set `CORS_ALLOWED_ORIGIN` to the exact public frontend origin.
 - [ ] Disable the MinIO console exposure or place it behind an authenticated,
   network-restricted proxy.

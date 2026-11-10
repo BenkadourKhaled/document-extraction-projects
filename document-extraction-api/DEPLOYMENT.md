@@ -51,7 +51,15 @@ Set at least:
 | `API_PORT` | host port for the API; keep it private behind the proxy |
 | `FRONTEND_PORT` | host port for the frontend nginx container |
 | `RETENTION_DAYS` | organization policy; `0` disables automatic purge |
+| `OLLAMA_ENABLED` | `false` unless a local model is installed and the network path is trusted |
+| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` from Compose; never a public endpoint |
 | `FRONTEND_CONTEXT` | path to the frontend checkout, default `../document-extraction-front-end` |
+
+If `OLLAMA_ENABLED=true`, pull the model first (`ollama pull llama3.2:1b`) and
+verify `GET $OLLAMA_BASE_URL/api/tags` from the API container. Keep port `11434`
+on localhost or a trusted private network; Ollama has no authentication by
+default. When both services run in Docker and Ollama is on the host, start it with
+`OLLAMA_HOST=0.0.0.0:11434` and rely on host firewall rules.
 
 The API refuses to start with the development `JWT_SECRET`, the default bootstrap
 password, or the MinIO default secret when the active profile is `postgres` or

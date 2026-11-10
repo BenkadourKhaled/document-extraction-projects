@@ -55,6 +55,18 @@ springdoc:
     path: /v3/api-docs
 
 app:
+  ai:
+    ollama:
+      # Optional local LLM extraction. Deterministic rules always run first and
+      # fill missing keys only. The model must already be pulled in Ollama.
+      enabled: ${OLLAMA_ENABLED:false}
+      base-url: "${OLLAMA_BASE_URL:http://localhost:11434}"
+      model: "${OLLAMA_MODEL:llama3.2:1b}"
+      timeout-seconds: ${OLLAMA_TIMEOUT_SECONDS:120}
+      max-input-characters: ${OLLAMA_MAX_INPUT_CHARACTERS:12000}
+      num-predict: ${OLLAMA_NUM_PREDICT:256}
+      num-context: ${OLLAMA_NUM_CTX:8192}
+      keep-alive: "${OLLAMA_KEEP_ALIVE:5m}"
   cors:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
   extraction:

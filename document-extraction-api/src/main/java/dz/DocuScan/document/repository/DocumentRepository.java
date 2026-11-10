@@ -34,7 +34,8 @@ public class DocumentRepository {
     private static final String DOCUMENT_COLUMNS = """
             id, organization_id, owner_id, file_name, mime_type, size_bytes, sha256,
             storage_key, languages, status, page_count, full_text, pages_json,
-            duration_ms, error, created_at, updated_at, completed_at, retention_until
+            duration_ms, error, created_at, updated_at, completed_at, retention_until,
+            lineage_id, source_document_id
             """;
 
     private final JdbcTemplate jdbc;
@@ -50,8 +51,9 @@ public class DocumentRepository {
                         INSERT INTO documents (
                             id, organization_id, owner_id, file_name, mime_type, size_bytes, sha256,
                             storage_key, languages, status, page_count, full_text, pages_json,
-                            duration_ms, error, created_at, updated_at, completed_at, retention_until
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            duration_ms, error, created_at, updated_at, completed_at, retention_until,
+                            lineage_id, source_document_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 job.getId(),
                 job.getOrganizationId(),
@@ -71,7 +73,9 @@ public class DocumentRepository {
                 Timestamp.from(job.getCreatedAt()),
                 Timestamp.from(Instant.now()),
                 timestamp(job.getCompletedAt()),
-                timestamp(job.getRetentionUntil()));
+                timestamp(job.getRetentionUntil()),
+                job.getLineageId(),
+                job.getSourceDocumentId());
     }
 
     public boolean update(ExtractionJob job) {
@@ -298,7 +302,9 @@ public class DocumentRepository {
                 rs.getString("storage_key"),
                 rs.getString("languages"),
                 instant(rs, "created_at"),
-                instant(rs, "retention_until"));
+                instant(rs, "retention_until"),
+                rs.getObject("lineage_id", UUID.class),
+                rs.getObject("source_document_id", UUID.class));
         job.restore(
                 ExtractionStatus.valueOf(rs.getString("status")),
                 rs.getInt("page_count"),

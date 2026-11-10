@@ -19,6 +19,17 @@ pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface DocumentPreviewProps {
   file: File;
+  highlights?: PreviewHighlight[];
+}
+
+export interface PreviewHighlight {
+  id: string;
+  pageNumber: number;
+  bboxX0: number;
+  bboxY0: number;
+  bboxX1: number;
+  bboxY1: number;
+  label?: string;
 }
 
 const MIN_ZOOM = 0.5;
@@ -26,7 +37,7 @@ const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
 const PDF_OPTIONS = { isEvalSupported: false };
 
-export function DocumentPreview({ file }: DocumentPreviewProps) {
+export function DocumentPreview({ file, highlights = [] }: DocumentPreviewProps) {
   const { t } = useTranslation();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -34,6 +45,7 @@ export function DocumentPreview({ file }: DocumentPreviewProps) {
   const [zoom, setZoom] = useState<number>(1);
   const pdf = isPdf(file);
   const tiff = isTiff(file);
+  const highlightPage = highlights[0]?.pageNumber;
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -47,6 +59,16 @@ export function DocumentPreview({ file }: DocumentPreviewProps) {
     setPage(1);
     setNumPages(0);
   }, [file]);
+
+  useEffect(() => {
+    if (highlightPage && highlightPage !== page) {
+      setPage(highlightPage);
+    }
+  }, [highlightPage, page]);
+
+  const currentHighlights = highlights.filter(
+    (highlight) => highlight.pageNumber === page,
+  );
 
   if (!objectUrl) return null;
 
@@ -93,20 +115,29 @@ export function DocumentPreview({ file }: DocumentPreviewProps) {
               options={PDF_OPTIONS}
               className={cn('mx-auto')}
             >
-              <Page
-                pageNumber={page}
-                scale={zoom}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-              />
+              <div className="relative inline-block">
+                <Page
+                  pageNumber={page}
+                  scale={zoom}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+                <HighlightOverlay highlights={currentHighlights} />
+              </div>
             </Document>
           ) : (
-            <img
-              src={objectUrl}
-              alt={t('result.preview')}
-              className="max-w-full select-none rounded-lg shadow-sm"
+            <div
+              className="relative inline-block select-none rounded-lg shadow-sm"
               style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
-            />
+            >
+              <img
+                src={objectUrl}
+                alt={t('result.preview')}
+                className="block max-w-full select-none rounded-lg"
+                draggable={false}
+              />
+              <HighlightOverlay highlights={currentHighlights} />
+            </div>
           )}
         </div>
       </div>
@@ -124,4 +155,41 @@ export function DocumentPreview({ file }: DocumentPreviewProps) {
       )}
     </div>
   );
+}
+
+function HighlightOverlay({ highlights }: { highlights: PreviewHighlight[] }) {
+  if (highlights.length === 0) return null;
+
+  return (
+    <>
+      {highlights.map((highlight) => {
+        const left = clampPercent(highlight.bboxX0);
+        const top = clampPercent(highlight.bboxY0);
+        const right = clampPercent(highlight.bboxX1);
+        const bottom = clampPercent(highlight.bboxY1);
+        return (
+          <div
+            key={highlight.id}
+            data-testid="field-highlight"
+            title={highlight.label}
+            aria-hidden="true"
+            className="pointer-events-none absolute z-10 rounded-[2px] border-2 border-primary bg-primary/20 shadow-[0_0_0_1px_hsl(var(--background))]"
+            style={{
+              left: `${left}%`,
+              top: `${top}%`,
+              width: `${Math.max(0, right - left)}%`,
+              height: `${Math.max(0, bottom - top)}%`,
+              minWidth: 2,
+              minHeight: 2,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value * 100));
 }

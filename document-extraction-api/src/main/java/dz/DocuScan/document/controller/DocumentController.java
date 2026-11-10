@@ -6,13 +6,14 @@ import dz.DocuScan.document.dto.ZipDownloadRequest;
 import dz.DocuScan.document.exception.DocumentException;
 import dz.DocuScan.document.model.AuthenticatedUser;
 import dz.DocuScan.document.model.ExtractionStatus;
+import dz.DocuScan.document.service.ExtractionExportService;
 import dz.DocuScan.document.service.ExtractionService;
 import dz.DocuScan.document.web.RequestInfo;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -40,9 +41,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class DocumentController {
 
     private final ExtractionService service;
+    private final ExtractionExportService exports;
 
-    public DocumentController(ExtractionService service) {
+    public DocumentController(ExtractionService service, ExtractionExportService exports) {
         this.service = service;
+        this.exports = exports;
     }
 
     @GetMapping
@@ -58,6 +61,10 @@ public class DocumentController {
     }
 
     @PostMapping("/zip")
+    @Operation(
+            summary = "Download several extractions as a ZIP archive",
+            description = "Each entry is produced by the same export service as the single-document "
+                    + "download, so effective field values and corrections are included.")
     public ResponseEntity<byte[]> zip(
             @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody ZipDownloadRequest request) {
@@ -82,21 +89,13 @@ public class DocumentController {
                     if (job.getStatus() != ExtractionStatus.COMPLETED) {
                         continue;
                     }
-                    var response = service.response(job);
                     byte[] content;
                     String extension;
                     if ("json".equals(format)) {
-                        try {
-                            com.fasterxml.jackson.databind.ObjectMapper mapper =
-                                    new com.fasterxml.jackson.databind.ObjectMapper();
-                            content = mapper.writeValueAsBytes(response);
-                        } catch (Exception ex) {
-                            throw new DocumentException(500, "Impossible de générer le ZIP.", ex);
-                        }
+                        content = exports.jsonBytes(job);
                         extension = "json";
                     } else {
-                        content = (response.fullText() == null ? "" : response.fullText())
-                                .getBytes(StandardCharsets.UTF_8);
+                        content = exports.txtBytes(job);
                         extension = "txt";
                     }
                     String baseName = (job.getFileName() == null ? id.toString() : job.getFileName())

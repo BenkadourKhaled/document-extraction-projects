@@ -79,6 +79,62 @@ export interface Extraction {
   languages: string;
 }
 
+export type FieldVerificationStatus = 'VERIFIED' | 'UNVERIFIED' | 'AMBIGUOUS';
+
+export type FieldType = 'TEXT' | 'DATE' | 'IDENTIFIER';
+
+export interface FieldSource {
+  id: string;
+  pageNumber: number;
+  bboxX0: number;
+  bboxY0: number;
+  bboxX1: number;
+  bboxY1: number;
+  sourceSpace: string;
+  pageWidth: number;
+  pageHeight: number;
+  rotationDeg: number;
+  charStart: number;
+  charEnd: number;
+  sourceText: string | null;
+  ordinal: number;
+}
+
+export interface FieldCorrection {
+  id: string;
+  correctedValue: string;
+  previousValue: string | null;
+  reason: string | null;
+  actorDisplayName: string | null;
+  createdAt: string;
+  supersededAt: string | null;
+  active: boolean;
+}
+
+export interface ExtractedField {
+  id: string;
+  documentId: string;
+  lineageId: string;
+  fieldKey: string;
+  label: string;
+  fieldType: FieldType;
+  rawValue: string;
+  normalizedValue: string;
+  effectiveValue: string;
+  verificationStatus: FieldVerificationStatus;
+  confidence: number | null;
+  extractionMethod: string;
+  extractorVersion: string;
+  corrected: boolean;
+  sources: FieldSource[];
+  corrections: FieldCorrection[];
+}
+
+export interface FieldCorrectionInput {
+  value: string;
+  reason?: string;
+}
+
 export interface DocumentSummary {
   id: string;
   fileName: string;
